@@ -1,0 +1,60 @@
+# --- Secrets ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+
+# --- Node ---
+node_modules/
+.next/
+out/
+.turbo/
+*.log
+npm-debug.log*
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- IDE ---
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+*.swp
+
+# --- Docker ---
+docker/data/
+*.local.yml
+
+# --- Logs & temp ---
+logs/
+tmp/
+*.tmp
+uploads/
+storage/
+
+# --- Database ---
+*.sqlite
+*.sqlite3
+*.db

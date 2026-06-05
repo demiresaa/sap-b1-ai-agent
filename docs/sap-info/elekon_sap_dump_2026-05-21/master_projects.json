@@ -1,0 +1,146 @@
+{
+    "odata.metadata": "https://10.11.10.46:50000/b1s/v1/$metadata#Projects",
+    "value": [
+        {
+            "Code": "1000",
+            "Name": "Kale Aydınlatma ve Zayıf Akım Projesi Ankara",
+            "ValidFrom": "2019-10-12T00:00:00Z",
+            "ValidTo": "2030-11-12T00:00:00Z",
+            "Active": "tYES"
+        },
+        {
+            "Code": "10001",
+            "Name": "Sözleşmeli Zayıf Akım Sistemleri Periyodik Yıllık Bakım",
+            "ValidFrom": "2023-01-01T00:00:00Z",
+            "ValidTo": "2030-01-01T00:00:00Z",
+            "Active": "tYES"
+        },
+        {
+            "Code": "10002",
+            "Name": "Sözleşmeli Aydınlatma Kontrol Sistemleri Yıllık Bakım",
+            "ValidFrom": "2023-01-01T00:00:00Z",
+            "ValidTo": "2030-01-01T00:00:00Z",
+            "Active": "tYES"
+        },
+        {
+            "Code": "10003",
+            "Name": "Sözleşmeli Test ve Devreye Alma Zayıf Akım Sistemleri",
+            "ValidFrom": "2023-01-01T00:00:00Z",
+            "ValidTo": "2030-01-01T00:00:00Z",
+            "Active": "tYES"
+        },
+        {
+            "Code": "10004",
+            "Name": "Sözleşmeli Test ve Devreye Alma Aydınlatma Kontrol Sistemleri",
+            "ValidFrom": "2023-01-01T00:00:00Z",
+            "ValidTo": "2030-01-01T00:00:00Z",
+            "Active": "tYES"
+        },
+        {
+            "Code": "10005",
+            "Name": "Sözleşmesiz Test ve Devreye Alma Zayıf Akım Sistemleri",
+            "ValidFrom": "2023-01-01T00:00:00Z",
+            "ValidTo": "2030-01-01T00:00:00Z",
+            "Active": "tYES"
+        },
+        {
+            "Code": "10006",
+            "Name": "Sözleşmesiz Test ve Devreye Alma Aydınlatma Kontrol Sistemleri",
+            "ValidFrom": "2023-01-01T00:00:00Z",
+            "ValidTo": "2030-01-01T00:00:00Z",
+            "Active": "tYES"
+        },
+        {
+            "Code": "10007",
+            "Name": "Sözleşmeli Malzeme Satışı - Zayıf Akım Sistemleri",
+            "ValidFrom": "2023-01-01T00:00:00Z",
+            "ValidTo": "2030-01-01T00:00:00Z",
+            "Active": "tYES"
+        },
+        {
+            "Code": "10008",
+            "Name": "Sözleşmeli Malzeme Satışı - Aydınlatma Kontrol Sistemleri",
+            "ValidFrom": "2023-01-01T00:00:00Z",
+            "ValidTo": "2030-01-01T00:00:00Z",
+            "Active": "tYES"
+        },
+        {
+            "Code": "10009",
+            "Name": "Sözleşmesiz Malzeme Satışı - Zayıf Akım Sistemleri",
+            "ValidFrom": "2023-01-01T00:00:00Z",
+            "ValidTo": "2030-01-01T00:00:00Z",
+            "Active": "tYES"
+        },
+        {
+            "Code": "1001",
+            "Name": "Servis Bakım Genel Proje",
+            "ValidFrom": "2019-10-12T00:00:00Z",
+            "ValidTo": "2030-11-12T00:00:00Z",
+            "Active": "tYES"
+        },
+        {
+            "Code": "10010",
+            "Name": "Sözleşmesiz Malzeme Satışı - Aydınlatma Kontrol Sistemleri",
+            "ValidFrom": "2023-01-01T00:00:00Z",
+            "ValidTo": "2030-01-01T00:00:00Z",
+            "Active": "tYES"
+        },
+        {
+            "Code": "10011",
+            "Name": "Kapalı",
+            "ValidFrom": "2023-01-01T00:00:00Z",
+            "ValidTo": "2027-01-01T00:00:00Z",
+            "Active": "tNO"
+        },
+        {
+            "Code": "1002",
+            "Name": "Alegria Business Hotel Aydınlatma Projesi Ankara",
+            "ValidFrom": "2019-10-12T00:00:00Z",
+            "ValidTo": "2030-11-12T00:00:00Z",
+            "Active": "tYES"
+        },
+        {
+            "Code": "1003",
+            "Name": "Bilkent Spor Kompleksi Aydınlatma Projesi Ankara",
+            "ValidFrom": "2019-10-12T00:00:00Z",
+            "ValidTo": "2030-11-12T00:00:00Z",
+            "Active": "tYES"
+        },
+        {
+            "Code": "1004",
+            "Name": "Marmaris Cumhurbaşkanlığı Okluk Koyu Devlet Konuk Evi Aydınlatma ve Zayıf Akım Projesi Muğla",
+            "ValidFrom": "2019-10-12T00:00:00Z",
+            "ValidTo": "2030-11-12T00:00:00Z",
+            "Active": "tYES"
+        },
+        {
+            "Code": "1005",
+            "Name": "Component Satış Genel Proje",
+            "ValidFrom": "2019-10-12T00:00:00Z",
+            "ValidTo": "2030-11-12T00:00:00Z",
+            "Active": "tYES"
+        },
+        {
+            "Code": "1006",
+            "Name": "İstinye Park Ototerminal Zayıf Akım Projesi İzmir",
+            "ValidFrom": "2019-10-12T00:00:00Z",
+            "ValidTo": "2030-11-12T00:00:00Z",
+            "Active": "tYES"
+        },
+        {
+            "Code": "1007",
+            "Name": "İstinye Park AVM Zayıf Akım Projesi İzmir",
+            "ValidFrom": "2019-10-12T00:00:00Z",
+            "ValidTo": "2030-11-12T00:00:00Z",
+            "Active": "tYES"
+        },
+        {
+            "Code": "1008",
+            "Name": "Hilton Otel ve Kongre Merkezi Aydınlatma Projesi Özbekistan",
+            "ValidFrom": "2019-10-12T00:00:00Z",
+            "ValidTo": "2030-11-12T00:00:00Z",
+            "Active": "tYES"
+        }
+    ],
+    "odata.nextLink": "Projects?$skip=20"
+}

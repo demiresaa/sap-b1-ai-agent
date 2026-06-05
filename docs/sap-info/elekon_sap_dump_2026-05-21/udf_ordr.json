@@ -1,0 +1,477 @@
+{
+    "odata.metadata": "https://10.11.10.46:50000/b1s/v1/$metadata#UserFieldsMD",
+    "value": [
+        {
+            "Name": "Teklif_Durumu",
+            "Type": "db_Alpha",
+            "Size": 20,
+            "Description": "Teklif Aşaması",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": "Hazırlanıyor",
+            "TableName": "ORDR",
+            "FieldID": 0,
+            "EditSize": 20,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": [
+                {
+                    "Value": "Hazırlanıyor",
+                    "Description": "Hazırlanıyor"
+                },
+                {
+                    "Value": "Gönderildi",
+                    "Description": "Gönderildi"
+                },
+                {
+                    "Value": "İptal",
+                    "Description": "İptal"
+                },
+                {
+                    "Value": "Kaybedildi",
+                    "Description": "Kaybedildi"
+                },
+                {
+                    "Value": "Kazanıldı",
+                    "Description": "Kazanıldı"
+                },
+                {
+                    "Value": "Beklemede",
+                    "Description": "Beklemede"
+                }
+            ]
+        },
+        {
+            "Name": "IrsliyeNo",
+            "Type": "db_Alpha",
+            "Size": 15,
+            "Description": "İrsaliye No",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": null,
+            "TableName": "ORDR",
+            "FieldID": 1,
+            "EditSize": 15,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        },
+        {
+            "Name": "IrsliyeTar",
+            "Type": "db_Date",
+            "Size": 8,
+            "Description": "İrsaliye Tarihi",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": null,
+            "TableName": "ORDR",
+            "FieldID": 2,
+            "EditSize": 8,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        },
+        {
+            "Name": "Odm_Tr",
+            "Type": "db_Alpha",
+            "Size": 50,
+            "Description": "Ödeme Türü",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": null,
+            "TableName": "ORDR",
+            "FieldID": 3,
+            "EditSize": 50,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": [
+                {
+                    "Value": "Çek",
+                    "Description": "Çek"
+                },
+                {
+                    "Value": "Senet",
+                    "Description": "Senet"
+                },
+                {
+                    "Value": "Havale",
+                    "Description": "Havale"
+                },
+                {
+                    "Value": "Peşin",
+                    "Description": "Peşin"
+                },
+                {
+                    "Value": "Bedelsiz",
+                    "Description": "Bedelsiz"
+                },
+                {
+                    "Value": "Numune",
+                    "Description": "Numune"
+                }
+            ]
+        },
+        {
+            "Name": "A2B_CORE_AVGDUE",
+            "Type": "db_Date",
+            "Size": 8,
+            "Description": "Average Due Date",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": null,
+            "TableName": "ORDR",
+            "FieldID": 4,
+            "EditSize": 8,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        },
+        {
+            "Name": "A2B_EDC_INCOTR",
+            "Type": "db_Alpha",
+            "Size": 50,
+            "Description": "Incoterms",
+            "SubType": "st_None",
+            "LinkedTable": "A2B_EDC_OINC",
+            "DefaultValue": "",
+            "TableName": "ORDR",
+            "FieldID": 5,
+            "EditSize": 50,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        },
+        {
+            "Name": "A2B_EDC_TRANMD",
+            "Type": "db_Alpha",
+            "Size": 50,
+            "Description": "Transport Mode",
+            "SubType": "st_None",
+            "LinkedTable": "A2B_EDC_OTMC",
+            "DefaultValue": "",
+            "TableName": "ORDR",
+            "FieldID": 6,
+            "EditSize": 50,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        },
+        {
+            "Name": "A2B_EDC_BANKIN",
+            "Type": "db_Numeric",
+            "Size": 11,
+            "Description": "Bank Info",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": "",
+            "TableName": "ORDR",
+            "FieldID": 7,
+            "EditSize": 11,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        },
+        {
+            "Name": "A2B_EDC_INCTDS",
+            "Type": "db_Alpha",
+            "Size": 254,
+            "Description": "Incoterms Destination",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": "",
+            "TableName": "ORDR",
+            "FieldID": 8,
+            "EditSize": 254,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        },
+        {
+            "Name": "Kur_Degerleme",
+            "Type": "db_Alpha",
+            "Size": 20,
+            "Description": "Kur Değerleme",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": null,
+            "TableName": "ORDR",
+            "FieldID": 9,
+            "EditSize": 20,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": [
+                {
+                    "Value": "Var",
+                    "Description": "Var"
+                },
+                {
+                    "Value": "Yok",
+                    "Description": "Yok"
+                }
+            ]
+        },
+        {
+            "Name": "Odeme_Kosullari",
+            "Type": "db_Alpha",
+            "Size": 50,
+            "Description": "Ödeme Koşulları",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": null,
+            "TableName": "ORDR",
+            "FieldID": 10,
+            "EditSize": 50,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": [
+                {
+                    "Value": "Nakit",
+                    "Description": "Nakit"
+                },
+                {
+                    "Value": "30 Gun",
+                    "Description": "30 Gün"
+                },
+                {
+                    "Value": "45 Gun",
+                    "Description": "45 Gün"
+                },
+                {
+                    "Value": "60 Gun",
+                    "Description": "60 Gün"
+                },
+                {
+                    "Value": "75 Gun",
+                    "Description": "75 Gün"
+                },
+                {
+                    "Value": "90 Gün",
+                    "Description": "90 Gün"
+                },
+                {
+                    "Value": "120 Gün",
+                    "Description": "120 Gün"
+                },
+                {
+                    "Value": "0 Gün",
+                    "Description": "0 Gün"
+                },
+                {
+                    "Value": "7 Gun",
+                    "Description": "7 Gün"
+                },
+                {
+                    "Value": "14 Gun",
+                    "Description": "14 Gün"
+                },
+                {
+                    "Value": "Kredi_Karti",
+                    "Description": "Kredi Kartı"
+                }
+            ]
+        },
+        {
+            "Name": "Teklif_Turu",
+            "Type": "db_Alpha",
+            "Size": 50,
+            "Description": "Teklif Türü",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": "---------------",
+            "TableName": "ORDR",
+            "FieldID": 14,
+            "EditSize": 50,
+            "Mandatory": "tYES",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": [
+                {
+                    "Value": "---------------",
+                    "Description": "---------------"
+                },
+                {
+                    "Value": "Hedef_Teklif",
+                    "Description": "Hedef Teklif"
+                },
+                {
+                    "Value": "Butce_Teklif",
+                    "Description": "Bütçe Teklif"
+                },
+                {
+                    "Value": "Ilave_Is",
+                    "Description": "İlave İş"
+                },
+                {
+                    "Value": "Standart_Teklif",
+                    "Description": "Standart Teklif"
+                },
+                {
+                    "Value": "Key_Account",
+                    "Description": "Key Account"
+                },
+                {
+                    "Value": "Servis",
+                    "Description": "Servis"
+                }
+            ]
+        },
+        {
+            "Name": "A2B_EDC_EDLNOT",
+            "Type": "db_Memo",
+            "Size": 8,
+            "Description": "eİrsaliye Notu",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": "",
+            "TableName": "ORDR",
+            "FieldID": 15,
+            "EditSize": null,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        },
+        {
+            "Name": "isExchngDiff",
+            "Type": "db_Alpha",
+            "Size": 1,
+            "Description": "Kur farkı",
+            "SubType": null,
+            "LinkedTable": null,
+            "DefaultValue": "N",
+            "TableName": "ORDR",
+            "FieldID": 16,
+            "EditSize": 1,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": [
+                {
+                    "Value": "Y",
+                    "Description": "Evet"
+                },
+                {
+                    "Value": "N",
+                    "Description": "Hayır"
+                }
+            ]
+        },
+        {
+            "Name": "ExchDiffCur",
+            "Type": "db_Alpha",
+            "Size": 4,
+            "Description": "Kur farkı para birimi",
+            "SubType": null,
+            "LinkedTable": null,
+            "DefaultValue": "",
+            "TableName": "ORDR",
+            "FieldID": 17,
+            "EditSize": 4,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        },
+        {
+            "Name": "KKEGTrans",
+            "Type": "db_Alpha",
+            "Size": 20,
+            "Description": "KKEG Yevmiye No",
+            "SubType": null,
+            "LinkedTable": null,
+            "DefaultValue": "",
+            "TableName": "ORDR",
+            "FieldID": 18,
+            "EditSize": 20,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        },
+        {
+            "Name": "babsFlag",
+            "Type": "db_Alpha",
+            "Size": 10,
+            "Description": "BABS Hariç",
+            "SubType": null,
+            "LinkedTable": null,
+            "DefaultValue": "",
+            "TableName": "ORDR",
+            "FieldID": 19,
+            "EditSize": 10,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": [
+                {
+                    "Value": "Y",
+                    "Description": "Evet"
+                },
+                {
+                    "Value": "N",
+                    "Description": "Hayır"
+                }
+            ]
+        },
+        {
+            "Name": "U_NihaiCariTckn",
+            "Type": "db_Alpha",
+            "Size": 11,
+            "Description": "Nihai Cari TCKN",
+            "SubType": null,
+            "LinkedTable": null,
+            "DefaultValue": "",
+            "TableName": "ORDR",
+            "FieldID": 20,
+            "EditSize": 11,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        },
+        {
+            "Name": "U_NihaiCariAdi",
+            "Type": "db_Alpha",
+            "Size": 40,
+            "Description": "Nihai Cari Adı",
+            "SubType": null,
+            "LinkedTable": null,
+            "DefaultValue": "",
+            "TableName": "ORDR",
+            "FieldID": 21,
+            "EditSize": 40,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        },
+        {
+            "Name": "U_NihaiCariSoyadi",
+            "Type": "db_Alpha",
+            "Size": 40,
+            "Description": "Nihai Cari Soyadı",
+            "SubType": null,
+            "LinkedTable": null,
+            "DefaultValue": "",
+            "TableName": "ORDR",
+            "FieldID": 22,
+            "EditSize": 40,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        }
+    ],
+    "odata.nextLink": "UserFieldsMD?%24filter=TableName+eq+%27ORDR%27&$skip=20"
+}

@@ -1,0 +1,162 @@
+"""OpenRouter (OpenAI-uyumlu) ince wrapper'ı.
+
+Tek giriş noktası: `call_llm_json` — JSON yanıt üretir, parse eder, hata
+durumunda raise eder. OpenRouter sayesinde aynı kod ile Claude, GPT, Gemini ve
+diğer modellere erişebiliriz (model adını config'ten değiştirmek yeterli).
+
+Geriye uyum: eski `call_anthropic_json` / `call_anthropic_text` adları alias
+olarak korunuyor — agent kodu değiştirmeye gerek yok.
+"""
+from __future__ import annotations
+
+import json
+import logging
+import time
+from typing import Any
+
+from openai import AsyncOpenAI
+
+from app.core.config import settings
+
+logger = logging.getLogger(__name__)
+
+_client: AsyncOpenAI | None = None
+
+
+def get_client() -> AsyncOpenAI:
+    global _client
+    if _client is None:
+        _client = AsyncOpenAI(
+            api_key=settings.openrouter_api_key,
+            base_url=settings.openrouter_base_url,
+            default_headers={
+                "HTTP-Referer": settings.openrouter_site_url,
+                "X-Title": settings.openrouter_app_name,
+            },
+        )
+    return _client
+
+
+def _build_messages(
+    *, system: str, user_message: str, images_b64: list[str] | None
+) -> list[dict[str, Any]]:
+    """OpenAI/OpenRouter `messages` formatı: system + user (text + image_url[])."""
+    user_content: list[dict[str, Any]] = []
+    if images_b64:
+        for b64 in images_b64:
+            user_content.append(
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/png;base64,{b64}"},
+                }
+            )
+    user_content.append({"type": "text", "text": user_message})
+    return [
+        {"role": "system", "content": system},
+        {"role": "user", "content": user_content},
+    ]
+
+
+def _truncate(s: str, n: int = 800) -> str:
+    if len(s) <= n:
+        return s
+    return s[:n] + f"… (+{len(s) - n} char)"
+
+
+async def call_llm_json(
+    *,
+    system: str,
+    user_message: str,
+    images_b64: list[str] | None = None,
+    model: str | None = None,
+    max_tokens: int = 4096,
+    temperature: float = 0.0,
+) -> dict[str, Any]:
+    """LLM'den JSON yanıt ister, parse edip dict döner."""
+    model = model or settings.llm_model_default
+    messages = _build_messages(system=system, user_message=user_message, images_b64=images_b64)
+
+    has_images = bool(images_b64)
+    logger.info(
+        "[LLM→] model=%s images=%s user_msg=%r",
+        model,
+        len(images_b64) if images_b64 else 0,
+        _truncate(user_message, 200),
+    )
+    started = time.monotonic()
+
+    try:
+        response = await get_client().chat.completions.create(
+            model=model,
+            messages=messages,  # type: ignore[arg-type]
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )
+    except Exception as exc:
+        logger.error(
+            "[LLM✗] model=%s elapsed=%.2fs hata: %s",
+            model,
+            time.monotonic() - started,
+            exc,
+        )
+        raise
+
+    elapsed = time.monotonic() - started
+    raw_text = (response.choices[0].message.content or "").strip()
+    usage = getattr(response, "usage", None)
+    in_tok = getattr(usage, "prompt_tokens", None) if usage else None
+    out_tok = getattr(usage, "completion_tokens", None) if usage else None
+
+    logger.info(
+        "[LLM←] model=%s elapsed=%.2fs in_tok=%s out_tok=%s resp=%r",
+        model,
+        elapsed,
+        in_tok,
+        out_tok,
+        _truncate(raw_text, 800),
+    )
+
+    if raw_text.startswith("```"):
+        raw_text = raw_text.strip("`")
+        if raw_text.lower().startswith("json"):
+            raw_text = raw_text[4:].lstrip()
+    try:
+        return json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        logger.error("[LLM!] JSON parse hatası: %s | raw=%s", exc, raw_text[:1500])
+        raise ValueError("LLM yanıtı geçerli JSON değil") from exc
+
+
+async def call_llm_text(
+    *,
+    system: str,
+    user_message: str,
+    model: str | None = None,
+    max_tokens: int = 1024,
+    temperature: float = 0.2,
+) -> str:
+    model = model or settings.llm_model_fast
+    logger.info("[LLM→text] model=%s msg=%r", model, _truncate(user_message, 200))
+    started = time.monotonic()
+    response = await get_client().chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": system},
+            {"role": "user", "content": user_message},
+        ],
+        max_tokens=max_tokens,
+        temperature=temperature,
+    )
+    text = response.choices[0].message.content or ""
+    logger.info(
+        "[LLM←text] model=%s elapsed=%.2fs resp=%r",
+        model,
+        time.monotonic() - started,
+        _truncate(text, 400),
+    )
+    return text
+
+
+# Geriye uyum alias'ları
+call_anthropic_json = call_llm_json
+call_anthropic_text = call_llm_text

@@ -1,0 +1,432 @@
+{
+    "odata.metadata": "https://10.11.10.46:50000/b1s/v1/$metadata#UserFieldsMD",
+    "value": [
+        {
+            "Name": "A2B_EDC_EINACT",
+            "Type": "db_Alpha",
+            "Size": 1,
+            "Description": "eInvoice Active",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": "N",
+            "TableName": "OCRD",
+            "FieldID": 0,
+            "EditSize": 1,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": [
+                {
+                    "Value": "Y",
+                    "Description": "Evet"
+                },
+                {
+                    "Value": "N",
+                    "Description": "Hayır"
+                }
+            ]
+        },
+        {
+            "Name": "A2B_EDC_GIBREG",
+            "Type": "db_Alpha",
+            "Size": 1,
+            "Description": "Registered with GIB",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": "N",
+            "TableName": "OCRD",
+            "FieldID": 1,
+            "EditSize": 1,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": [
+                {
+                    "Value": "Y",
+                    "Description": "Evet"
+                },
+                {
+                    "Value": "N",
+                    "Description": "Hayır"
+                }
+            ]
+        },
+        {
+            "Name": "A2B_EDC_REGDAT",
+            "Type": "db_Date",
+            "Size": 8,
+            "Description": "Registration Date",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": null,
+            "TableName": "OCRD",
+            "FieldID": 2,
+            "EditSize": 8,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        },
+        {
+            "Name": "A2B_EDC_SNDALN",
+            "Type": "db_Alpha",
+            "Size": 254,
+            "Description": "Sender Alias",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": "",
+            "TableName": "OCRD",
+            "FieldID": 3,
+            "EditSize": 254,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        },
+        {
+            "Name": "A2B_EDC_RCVALN",
+            "Type": "db_Alpha",
+            "Size": 254,
+            "Description": "Receiver Alias",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": "",
+            "TableName": "OCRD",
+            "FieldID": 4,
+            "EditSize": 254,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        },
+        {
+            "Name": "A2B_EDC_SNDALD",
+            "Type": "db_Date",
+            "Size": 8,
+            "Description": "Sender Alias Date",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": null,
+            "TableName": "OCRD",
+            "FieldID": 5,
+            "EditSize": 8,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        },
+        {
+            "Name": "A2B_EDC_RCVALD",
+            "Type": "db_Date",
+            "Size": 8,
+            "Description": "Receiver Alias Date",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": null,
+            "TableName": "OCRD",
+            "FieldID": 6,
+            "EditSize": 8,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        },
+        {
+            "Name": "A2B_EDC_LASTVD",
+            "Type": "db_Date",
+            "Size": 8,
+            "Description": "Last Validation Date",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": null,
+            "TableName": "OCRD",
+            "FieldID": 7,
+            "EditSize": 8,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        },
+        {
+            "Name": "A2B_EDC_EINAPP",
+            "Type": "db_Alpha",
+            "Size": 1,
+            "Description": "Approve Outgoing Invoices",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": "D",
+            "TableName": "OCRD",
+            "FieldID": 8,
+            "EditSize": 1,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": [
+                {
+                    "Value": "D",
+                    "Description": "Varsayılan"
+                },
+                {
+                    "Value": "Y",
+                    "Description": "Evet"
+                },
+                {
+                    "Value": "N",
+                    "Description": "Hayır"
+                }
+            ]
+        },
+        {
+            "Name": "A2B_EDC_EINAPI",
+            "Type": "db_Alpha",
+            "Size": 1,
+            "Description": "Approve Incomning Invoices",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": "D",
+            "TableName": "OCRD",
+            "FieldID": 9,
+            "EditSize": 1,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": [
+                {
+                    "Value": "D",
+                    "Description": "Varsayılan"
+                },
+                {
+                    "Value": "Y",
+                    "Description": "Evet"
+                },
+                {
+                    "Value": "N",
+                    "Description": "Hayır"
+                }
+            ]
+        },
+        {
+            "Name": "A2B_EDC_DFTSCN",
+            "Type": "db_Alpha",
+            "Size": 30,
+            "Description": "Default Scenario Type",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": "",
+            "TableName": "OCRD",
+            "FieldID": 10,
+            "EditSize": 30,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": [
+                {
+                    "Value": "",
+                    "Description": ""
+                },
+                {
+                    "Value": "DEFAULT",
+                    "Description": "DEFAULT"
+                },
+                {
+                    "Value": "TEMELFATURA",
+                    "Description": "TEMELFATURA"
+                },
+                {
+                    "Value": "TICARIFATURA",
+                    "Description": "TICARIFATURA"
+                },
+                {
+                    "Value": "EARSIVFATURA",
+                    "Description": "EARSIVFATURA"
+                },
+                {
+                    "Value": "IHRACAT",
+                    "Description": "IHRACAT"
+                },
+                {
+                    "Value": "YOLCUBERABERFATURA",
+                    "Description": "YOLCUBERABERFATURA"
+                },
+                {
+                    "Value": "TEMELIRSALIYE",
+                    "Description": "TEMELIRSALIYE"
+                },
+                {
+                    "Value": "KAMU",
+                    "Description": "KAMU"
+                },
+                {
+                    "Value": "HKS",
+                    "Description": "HKS"
+                },
+                {
+                    "Value": "ENERJI",
+                    "Description": "ENERJI"
+                },
+                {
+                    "Value": "OZELFATURA",
+                    "Description": "OZELFATURA"
+                },
+                {
+                    "Value": "ILAC",
+                    "Description": "ILAC_TIBBICIHAZ"
+                }
+            ]
+        },
+        {
+            "Name": "A2B_EDC_ISPRVT",
+            "Type": "db_Alpha",
+            "Size": 1,
+            "Description": "Individual",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": "N",
+            "TableName": "OCRD",
+            "FieldID": 11,
+            "EditSize": 1,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": [
+                {
+                    "Value": "Y",
+                    "Description": "Evet"
+                },
+                {
+                    "Value": "N",
+                    "Description": "Hayır"
+                }
+            ]
+        },
+        {
+            "Name": "A2B_EDC_FIRST",
+            "Type": "db_Alpha",
+            "Size": 60,
+            "Description": "First Name",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": "",
+            "TableName": "OCRD",
+            "FieldID": 12,
+            "EditSize": 60,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        },
+        {
+            "Name": "A2B_EDC_MIDDLE",
+            "Type": "db_Alpha",
+            "Size": 60,
+            "Description": "Middle Name",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": "",
+            "TableName": "OCRD",
+            "FieldID": 13,
+            "EditSize": 60,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        },
+        {
+            "Name": "A2B_EDC_LAST",
+            "Type": "db_Alpha",
+            "Size": 60,
+            "Description": "Last Name",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": "",
+            "TableName": "OCRD",
+            "FieldID": 14,
+            "EditSize": 60,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        },
+        {
+            "Name": "A2B_EDC_TITLE",
+            "Type": "db_Alpha",
+            "Size": 60,
+            "Description": "Title Name",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": "",
+            "TableName": "OCRD",
+            "FieldID": 15,
+            "EditSize": 60,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        },
+        {
+            "Name": "A2B_EDC_SUFFIX",
+            "Type": "db_Alpha",
+            "Size": 60,
+            "Description": "Suffix",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": "",
+            "TableName": "OCRD",
+            "FieldID": 16,
+            "EditSize": 60,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        },
+        {
+            "Name": "A2B_EDC_TAXID",
+            "Type": "db_Alpha",
+            "Size": 50,
+            "Description": "Tax Id",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": "",
+            "TableName": "OCRD",
+            "FieldID": 17,
+            "EditSize": 50,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        },
+        {
+            "Name": "A2B_EDC_TAXOFF",
+            "Type": "db_Alpha",
+            "Size": 60,
+            "Description": "Tax Office",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": "",
+            "TableName": "OCRD",
+            "FieldID": 18,
+            "EditSize": 60,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        },
+        {
+            "Name": "A2B_EDC_PYNOTE",
+            "Type": "db_Alpha",
+            "Size": 254,
+            "Description": "Payment Note",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": "",
+            "TableName": "OCRD",
+            "FieldID": 19,
+            "EditSize": 254,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        }
+    ],
+    "odata.nextLink": "UserFieldsMD?%24filter=TableName+eq+%27OCRD%27&$skip=20"
+}

@@ -1,0 +1,186 @@
+{
+    "odata.metadata": "https://10.11.10.46:50000/b1s/v1/$metadata#UserTablesMD",
+    "value": [
+        {
+            "TableName": "A2B_CORE_ADH1",
+            "TableDescription": "A2B_CORE_AddOn_Log_History",
+            "TableType": "bott_NoObject",
+            "Archivable": "tNO",
+            "ArchiveDateField": null,
+            "DisplayMenu": "tYES",
+            "ApplyAuthorization": "tNO"
+        },
+        {
+            "TableName": "A2B_CORE_COLD",
+            "TableDescription": "A2B_CORE_Empty_Table",
+            "TableType": "bott_MasterData",
+            "Archivable": "tNO",
+            "ArchiveDateField": null,
+            "DisplayMenu": "tYES",
+            "ApplyAuthorization": "tNO"
+        },
+        {
+            "TableName": "A2B_CORE_CONN",
+            "TableDescription": "A2B_CORE_Connection_Header",
+            "TableType": "bott_MasterData",
+            "Archivable": "tNO",
+            "ArchiveDateField": null,
+            "DisplayMenu": "tYES",
+            "ApplyAuthorization": "tNO"
+        },
+        {
+            "TableName": "A2B_CORE_FXD1",
+            "TableDescription": "A2B_CORE_RT_Determination_Rule",
+            "TableType": "bott_MasterDataLines",
+            "Archivable": "tNO",
+            "ArchiveDateField": null,
+            "DisplayMenu": "tYES",
+            "ApplyAuthorization": "tNO"
+        },
+        {
+            "TableName": "A2B_CORE_LOCK",
+            "TableDescription": "A2B_CORE_Simple_Lock_Table",
+            "TableType": "bott_MasterData",
+            "Archivable": "tNO",
+            "ArchiveDateField": null,
+            "DisplayMenu": "tYES",
+            "ApplyAuthorization": "tNO"
+        },
+        {
+            "TableName": "A2B_CORE_OADH",
+            "TableDescription": "A2B_CORE_Installed_AddOns",
+            "TableType": "bott_NoObject",
+            "Archivable": "tNO",
+            "ArchiveDateField": null,
+            "DisplayMenu": "tYES",
+            "ApplyAuthorization": "tNO"
+        },
+        {
+            "TableName": "A2B_CORE_OBOO",
+            "TableDescription": "A2B_CORE_Object_Info",
+            "TableType": "bott_MasterData",
+            "Archivable": "tNO",
+            "ArchiveDateField": null,
+            "DisplayMenu": "tYES",
+            "ApplyAuthorization": "tNO"
+        },
+        {
+            "TableName": "A2B_CORE_ODRC",
+            "TableDescription": "A2B_CORE_Delay_Reason_Codes",
+            "TableType": "bott_MasterData",
+            "Archivable": "tNO",
+            "ArchiveDateField": null,
+            "DisplayMenu": "tYES",
+            "ApplyAuthorization": "tNO"
+        },
+        {
+            "TableName": "A2B_CORE_OFXD",
+            "TableDescription": "A2B_CORE_RT_Determination",
+            "TableType": "bott_MasterData",
+            "Archivable": "tNO",
+            "ArchiveDateField": null,
+            "DisplayMenu": "tYES",
+            "ApplyAuthorization": "tNO"
+        },
+        {
+            "TableName": "A2B_CORE_OFXR",
+            "TableDescription": "A2B_CORE_Rates",
+            "TableType": "bott_MasterData",
+            "Archivable": "tNO",
+            "ArchiveDateField": null,
+            "DisplayMenu": "tYES",
+            "ApplyAuthorization": "tNO"
+        },
+        {
+            "TableName": "A2B_CORE_OFXT",
+            "TableDescription": "A2B_CORE_Rate_Types",
+            "TableType": "bott_MasterData",
+            "Archivable": "tNO",
+            "ArchiveDateField": null,
+            "DisplayMenu": "tYES",
+            "ApplyAuthorization": "tNO"
+        },
+        {
+            "TableName": "A2B_CORE_OINT",
+            "TableDescription": "A2B_CORE_Invoice_Types",
+            "TableType": "bott_MasterData",
+            "Archivable": "tNO",
+            "ArchiveDateField": null,
+            "DisplayMenu": "tYES",
+            "ApplyAuthorization": "tNO"
+        },
+        {
+            "TableName": "A2B_CORE_ORRC",
+            "TableDescription": "A2B_CORE_Return_Reason_Codes",
+            "TableType": "bott_MasterData",
+            "Archivable": "tNO",
+            "ArchiveDateField": null,
+            "DisplayMenu": "tYES",
+            "ApplyAuthorization": "tNO"
+        },
+        {
+            "TableName": "A2B_EDC_AEX1",
+            "TableDescription": "A2B_EDC_eLedger_Acct_Excl_Dtl",
+            "TableType": "bott_MasterDataLines",
+            "Archivable": "tNO",
+            "ArchiveDateField": null,
+            "DisplayMenu": "tYES",
+            "ApplyAuthorization": "tNO"
+        },
+        {
+            "TableName": "A2B_EDC_ELL1",
+            "TableDescription": "A2B_EDC_eLedger_Log_Messages",
+            "TableType": "bott_DocumentLines",
+            "Archivable": "tNO",
+            "ArchiveDateField": null,
+            "DisplayMenu": "tYES",
+            "ApplyAuthorization": "tNO"
+        },
+        {
+            "TableName": "A2B_EDC_GIB1",
+            "TableDescription": "A2B_EDC_GIB_eInvoice_Alias",
+            "TableType": "bott_MasterDataLines",
+            "Archivable": "tNO",
+            "ArchiveDateField": null,
+            "DisplayMenu": "tYES",
+            "ApplyAuthorization": "tNO"
+        },
+        {
+            "TableName": "A2B_EDC_GIB2",
+            "TableDescription": "A2B_EDC_GIB_eDelivery_Alias",
+            "TableType": "bott_MasterDataLines",
+            "Archivable": "tNO",
+            "ArchiveDateField": null,
+            "DisplayMenu": "tYES",
+            "ApplyAuthorization": "tNO"
+        },
+        {
+            "TableName": "A2B_EDC_OAEX",
+            "TableDescription": "A2B_EDC_eLedger_Acct_Excl_Hdr",
+            "TableType": "bott_MasterData",
+            "Archivable": "tNO",
+            "ArchiveDateField": null,
+            "DisplayMenu": "tYES",
+            "ApplyAuthorization": "tNO"
+        },
+        {
+            "TableName": "A2B_EDC_OAVR",
+            "TableDescription": "A2B_EDC_Authorized_VAT_Return",
+            "TableType": "bott_MasterData",
+            "Archivable": "tNO",
+            "ArchiveDateField": null,
+            "DisplayMenu": "tYES",
+            "ApplyAuthorization": "tNO"
+        },
+        {
+            "TableName": "A2B_EDC_OBRN",
+            "TableDescription": "A2B_EDC_eDocument_Branches",
+            "TableType": "bott_MasterData",
+            "Archivable": "tNO",
+            "ArchiveDateField": null,
+            "DisplayMenu": "tYES",
+            "ApplyAuthorization": "tNO"
+        }
+    ],
+    "odata.nextLink": "UserTablesMD?$skip=20"
+}

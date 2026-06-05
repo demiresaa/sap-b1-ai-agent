@@ -1,0 +1,174 @@
+{
+    "odata.metadata": "https://10.11.10.46:50000/b1s/v1/$metadata#UserFieldsMD",
+    "value": [
+        {
+            "Name": "KKDF",
+            "Type": "db_Alpha",
+            "Size": 10,
+            "Description": "KKDF",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": null,
+            "TableName": "OITM",
+            "FieldID": 0,
+            "EditSize": 10,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": [
+                {
+                    "Value": "%6",
+                    "Description": "%6"
+                },
+                {
+                    "Value": "Muaf",
+                    "Description": "Muaf"
+                }
+            ]
+        },
+        {
+            "Name": "OTV",
+            "Type": "db_Alpha",
+            "Size": 10,
+            "Description": "OTV",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": null,
+            "TableName": "OITM",
+            "FieldID": 1,
+            "EditSize": 10,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": [
+                {
+                    "Value": "% 6,70",
+                    "Description": "% 6,70"
+                },
+                {
+                    "Value": "% 20",
+                    "Description": "% 20"
+                },
+                {
+                    "Value": "Yok",
+                    "Description": "Yok"
+                }
+            ]
+        },
+        {
+            "Name": "Grup",
+            "Type": "db_Alpha",
+            "Size": 50,
+            "Description": "Grup",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": null,
+            "TableName": "OITM",
+            "FieldID": 2,
+            "EditSize": 50,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": [
+                {
+                    "Value": "Aydınlatma",
+                    "Description": "Aydınlatma"
+                },
+                {
+                    "Value": "Zayıf Akım",
+                    "Description": "Zayıf Akım"
+                }
+            ]
+        },
+        {
+            "Name": "A2B_EDC_COFORI",
+            "Type": "db_Alpha",
+            "Size": 3,
+            "Description": "Country Of Origin",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": "",
+            "TableName": "OITM",
+            "FieldID": 3,
+            "EditSize": 3,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        },
+        {
+            "Name": "Dagit",
+            "Type": "db_Alpha",
+            "Size": 1,
+            "Description": "Maliyet Dağıtım Kalemi",
+            "SubType": null,
+            "LinkedTable": null,
+            "DefaultValue": "N",
+            "TableName": "OITM",
+            "FieldID": 4,
+            "EditSize": 1,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": [
+                {
+                    "Value": "Y",
+                    "Description": "Evet"
+                },
+                {
+                    "Value": "N",
+                    "Description": "Hayır"
+                }
+            ]
+        },
+        {
+            "Name": "A2B_CORE_RDLDTM",
+            "Type": "db_Numeric",
+            "Size": 11,
+            "Description": "Hazır Tarihi Ön Süre",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": "0",
+            "TableName": "OITM",
+            "FieldID": 5,
+            "EditSize": 11,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": []
+        },
+        {
+            "Name": "A2B_EDC_ITEMCAT",
+            "Type": "db_Alpha",
+            "Size": 50,
+            "Description": "Einvoice Item Category",
+            "SubType": "st_None",
+            "LinkedTable": null,
+            "DefaultValue": "",
+            "TableName": "OITM",
+            "FieldID": 6,
+            "EditSize": 50,
+            "Mandatory": "tNO",
+            "LinkedUDO": null,
+            "LinkedSystemObject": null,
+            "ValidValuesMD": [
+                {
+                    "Value": "",
+                    "Description": ""
+                },
+                {
+                    "Value": "ILAC",
+                    "Description": "ILAC"
+                },
+                {
+                    "Value": "TIBBICIHAZ",
+                    "Description": "TIBBICIHAZ"
+                },
+                {
+                    "Value": "DIGER",
+                    "Description": "DIGER"
+                }
+            ]
+        }
+    ]
+}

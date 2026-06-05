@@ -1,0 +1,134 @@
+@page {
+  size: A4;
+  margin: 18mm 16mm 16mm 16mm;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "DejaVu Sans", sans-serif;
+  font-size: 10.5pt;
+  color: #1a202c;
+  margin: 0;
+}
+
+.hdr {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 2px solid #0f172a;
+  padding-bottom: 10px;
+  margin-bottom: 18px;
+}
+
+.brand h1 {
+  font-size: 20pt;
+  margin: 0 0 2px 0;
+  color: #0f172a;
+}
+
+.brand .tag {
+  font-size: 11pt;
+  color: #475569;
+}
+
+.meta {
+  text-align: right;
+  font-size: 9.5pt;
+  line-height: 1.6;
+}
+
+.meta span {
+  color: #64748b;
+  margin-right: 4px;
+}
+
+.customer {
+  margin-bottom: 18px;
+}
+
+.customer h2,
+.notes h3 {
+  font-size: 11pt;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #475569;
+  margin: 0 0 8px 0;
+}
+
+.customer-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 16px;
+  font-size: 10.5pt;
+}
+
+.customer-grid .full {
+  grid-column: span 2;
+}
+
+.customer-grid span {
+  color: #64748b;
+  margin-right: 4px;
+}
+
+.lines table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.lines th {
+  background: #f1f5f9;
+  color: #334155;
+  text-align: left;
+  font-weight: 600;
+  font-size: 9.5pt;
+  padding: 6px 8px;
+  border-bottom: 1px solid #cbd5e1;
+}
+
+.lines td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: top;
+}
+
+.lines td.num,
+.lines th.num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.lines tfoot td {
+  background: #f8fafc;
+  font-weight: 600;
+  border-top: 2px solid #0f172a;
+}
+
+.lines td.strong {
+  font-size: 11.5pt;
+}
+
+.lines td.empty {
+  text-align: center;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.notes {
+  margin-top: 16px;
+  font-size: 10pt;
+  color: #334155;
+}
+
+footer {
+  position: fixed;
+  bottom: -10mm;
+  left: 0;
+  right: 0;
+  font-size: 8pt;
+  color: #94a3b8;
+  text-align: center;
+}

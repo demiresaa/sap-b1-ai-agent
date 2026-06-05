@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Teklif — {{ tenant.name }}</title>
+  <link rel="stylesheet" href="default.css">
+</head>
+<body>
+  <header class="hdr">
+    <div class="brand">
+      <h1>{{ tenant.name }}</h1>
+      <div class="tag">Satış Teklifi</div>
+    </div>
+    <div class="meta">
+      <div><span>Teklif No:</span> {{ quote.reference_no or "—" }}</div>
+      <div><span>Tarih:</span> {{ quote.doc_date or "—" }}</div>
+      <div><span>Geçerlilik:</span> {{ quote.due_date or "—" }}</div>
+      <div><span>Para Birimi:</span> {{ quote.currency or "TRY" }}</div>
+    </div>
+  </header>
+
+  <section class="customer">
+    <h2>Müşteri</h2>
+    <div class="customer-grid">
+      <div><span>Unvan:</span> {{ quote.customer.name or "—" }}</div>
+      <div><span>Vergi No:</span> {{ quote.customer.tax_id or "—" }}</div>
+      <div><span>E-posta:</span> {{ quote.customer.email or "—" }}</div>
+      <div><span>Telefon:</span> {{ quote.customer.phone or "—" }}</div>
+      {% if quote.customer.address %}
+      <div class="full"><span>Adres:</span> {{ quote.customer.address }}</div>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="lines">
+    <table>
+      <thead>
+        <tr>
+          <th class="num">#</th>
+          <th>Kalem</th>
+          <th>Açıklama</th>
+          <th class="num">Miktar</th>
+          <th class="num">Birim Fiyat</th>
+          <th class="num">İskonto</th>
+          <th class="num">Tutar</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for line in quote.lines %}
+        <tr>
+          <td class="num">{{ line.line_no or loop.index }}</td>
+          <td>{{ line.item_code_raw or "—" }}</td>
+          <td>{{ line.description or "—" }}</td>
+          <td class="num">{{ "%g"|format(line.quantity or 0) }}</td>
+          <td class="num">{{ "%.2f"|format(line.unit_price or 0) }}</td>
+          <td class="num">{{ "%.1f"|format(line.discount_pct or 0) }}%</td>
+          <td class="num">{{ "%.2f"|format(line.total or ((line.quantity or 0) * (line.unit_price or 0) * (1 - (line.discount_pct or 0) / 100))) }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="empty">Kalem eklenmemiş.</td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="6" class="num">Toplam</td>
+          <td class="num strong">{{ "%.2f"|format(totals.grand_total) }} {{ quote.currency or "TRY" }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </section>
+
+  {% if quote.notes %}
+  <section class="notes">
+    <h3>Notlar</h3>
+    <p>{{ quote.notes }}</p>
+  </section>
+  {% endif %}
+
+  <footer>
+    <div>{{ tenant.name }} — bu teklif {{ generated_at }} tarihinde otomatik üretilmiştir.</div>
+  </footer>
+</body>
+</html>
