@@ -10,12 +10,15 @@ import asyncio
 import logging
 from typing import Any
 
+from redis.asyncio import Redis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.base import AgentContext
 from app.agents.orchestrator import OrchestratorAgent
 from app.agents.sap_writer import SAPWriterAgent
+from app.core.config import settings
+from app.core.redis_events import publish_document_event
 from app.db.base import new_uuid, utcnow
 from app.db.models import (
     Document,
@@ -28,9 +31,6 @@ from app.db.models import (
 from app.db.session import SessionFactory
 from app.sap.idempotency import IdempotencyStore
 from app.workers.celery_app import celery_app
-from redis.asyncio import Redis
-
-from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +92,19 @@ async def enqueue_submit_document(
     return submission_id
 
 
+async def enqueue_submit_document_inline(document_id: str) -> None:
+    """Auto-submit: process_document sonrası yüksek güven durumunda çağrılır.
+
+    Ayrı session açar — process session commit'lendi, bu bağımsız.
+    """
+    async with SessionFactory() as db:
+        doc = await _get_document(db, document_id)
+        if not doc:
+            return
+        await enqueue_submit_document(db, doc, actor_id=None)
+        await db.commit()
+
+
 # --- Celery tasks ---
 
 
@@ -127,6 +140,7 @@ async def _process_document_async(document_id: str) -> dict[str, Any]:
         doc.status = DocumentStatus.READING
         await db.flush()
         await db.commit()  # status değişimi UI'da hemen görünsün
+        await publish_document_event(document_id, {"event": "processing_started"})
 
     # Yeni session — agent run sırasında bağımsız transaction
     async with SessionFactory() as db:
@@ -150,6 +164,9 @@ async def _process_document_async(document_id: str) -> dict[str, Any]:
                 )
             )
             await db.commit()
+            await publish_document_event(
+                document_id, {"event": "processing_error", "error": str(exc)}
+            )
             return {"error": str(exc)}
 
         extracted = (result.data or {}).get("extracted") or {}
@@ -171,12 +188,14 @@ async def _process_document_async(document_id: str) -> dict[str, Any]:
                 doc.status = DocumentStatus.READY
             logger.info("[process_document] tamam doc=%s status=%s", document_id, doc.status.value)
 
+        confidence_tier = (result.data or {}).get("confidence_tier", "low")
         db.add(
             DocumentEvent(
                 document_id=document_id,
                 event_type="processed",
                 payload={
                     "confidence": result.confidence,
+                    "confidence_tier": confidence_tier,
                     "needs_human": result.needs_human,
                     "reason": result.human_reason,
                 },
@@ -184,7 +203,31 @@ async def _process_document_async(document_id: str) -> dict[str, Any]:
             )
         )
         await db.commit()
-        return {"status": doc.status.value, "confidence": result.confidence}
+        await publish_document_event(
+            document_id,
+            {
+                "event": "processing_done",
+                "status": doc.status.value,
+                "confidence": result.confidence,
+                "confidence_tier": confidence_tier,
+                "needs_human": result.needs_human,
+            },
+        )
+
+        # Tam otonom path: yüksek güven + sap_dry_run=False + flag açık → otomatik gönder
+        if (
+            doc.status == DocumentStatus.READY
+            and not result.needs_human
+            and confidence_tier == "high"
+            and not settings.sap_dry_run
+            and settings.auto_submit_on_high_confidence
+        ):
+            logger.info(
+                "[process_document] yüksek güven, otomatik submit tetikleniyor doc=%s", document_id
+            )
+            await enqueue_submit_document_inline(document_id)
+
+        return {"status": doc.status.value, "confidence": result.confidence, "tier": confidence_tier}
 
 
 async def _submit_document_async(submission_id: str) -> dict[str, Any]:

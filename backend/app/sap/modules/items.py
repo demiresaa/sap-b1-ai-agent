@@ -26,8 +26,18 @@ class ItemsModule:
         self.client = client
 
     async def list(
-        self, *, top: int = 100, skip: int = 0, search: str | None = None
+        self,
+        *,
+        top: int = 100,
+        skip: int = 0,
+        search: str | None = None,
+        expand_prices: bool = False,
     ) -> list[dict[str, Any]]:
+        """Aktif satış item'larını listeler.
+
+        expand_prices=True ise ItemPrices navigation property expand edilir — sync task'ı
+        için gerekli (fiyat karşılaştırmasında kullanılır).
+        """
         query = (
             ODataQuery()
             .select(*ITEM_SELECT_FIELDS)
@@ -36,6 +46,8 @@ class ItemsModule:
             .skip(skip)
             .orderby("ItemName")
         )
+        if expand_prices:
+            query.expand("ItemPrices")
         if search:
             query.filter(
                 or_(

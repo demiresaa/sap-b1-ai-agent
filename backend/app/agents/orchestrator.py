@@ -16,7 +16,7 @@ sonra `submit` endpoint'i SAPWriter'ı çağırır.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,10 +28,23 @@ from app.agents.pricing import PricingAgent
 from app.agents.product_matcher import ProductMatcherAgent
 from app.agents.schemas import ExtractedDocument
 from app.agents.stock import StockAgent
+from app.core.redis_events import publish_document_event
 from app.db.base import utcnow
 from app.db.models import AgentRun, AgentStep
 
 logger = logging.getLogger(__name__)
+
+HIGH_CONFIDENCE = 0.95   # tam otonom — insan onayı gerekmez
+MEDIUM_CONFIDENCE = 0.80  # hızlı doğrulama — 1-click onay yeterli
+# < MEDIUM_CONFIDENCE → tam insan incelemesi
+
+
+def _confidence_tier(score: float) -> str:
+    if score >= HIGH_CONFIDENCE:
+        return "high"
+    if score >= MEDIUM_CONFIDENCE:
+        return "medium"
+    return "low"
 
 
 class OrchestratorAgent(BaseAgent):
@@ -43,6 +56,7 @@ class OrchestratorAgent(BaseAgent):
         ctx: AgentContext,
         file_path: str | None = None,
         db: AsyncSession | None = None,
+        sap_client: Any | None = None,
         **kwargs: Any,
     ) -> AgentResult:
         if db is None:
@@ -66,6 +80,10 @@ class OrchestratorAgent(BaseAgent):
             nonlocal step_order
             step_order += 1
             started = utcnow()
+            await publish_document_event(
+                ctx.document_id,
+                {"event": "agent_started", "agent": agent.name, "step": step_order},
+            )
             result = await agent.run(ctx, **call_kwargs)
             db.add(
                 AgentStep(
@@ -81,10 +99,24 @@ class OrchestratorAgent(BaseAgent):
                 )
             )
             await db.flush()
+            await publish_document_event(
+                ctx.document_id,
+                {
+                    "event": "agent_done",
+                    "agent": agent.name,
+                    "step": step_order,
+                    "success": result.success,
+                    "confidence": result.confidence,
+                    "needs_human": result.needs_human,
+                    "duration_ms": result.duration_ms,
+                },
+            )
             return result
 
         # 1. DocumentReader
-        reader_result = await _step(DocumentReaderAgent(), file_path=file_path)
+        reader_result = await _step(
+            DocumentReaderAgent(), file_path=file_path, sap_client=sap_client
+        )
         steps_results["document_reader"] = reader_result
         if not reader_result.success:
             return _finalize(db, run, "failed", reader_result.error, steps_results)
@@ -136,6 +168,7 @@ class OrchestratorAgent(BaseAgent):
             extra={
                 "needs_human": any_human,
                 "overall_confidence": overall_confidence,
+                "confidence_tier": _confidence_tier(overall_confidence),
                 "card_code": card_code,
                 "extracted": extracted.model_dump(mode="json"),
                 "matches": product_result.data.get("matches", []),
@@ -154,9 +187,12 @@ def _finalize(
     extra: dict[str, Any] | None = None,
 ) -> AgentResult:
     run.status = status
-    run.completed_at = datetime.now(timezone.utc)
+    run.completed_at = datetime.now(UTC)
     run.error_message = error
-    run.summary = {**(extra or {}), "steps": {k: v.model_dump(mode="json") for k, v in steps_results.items()}}
+    run.summary = {
+        **(extra or {}),
+        "steps": {k: v.model_dump(mode="json") for k, v in steps_results.items()},
+    }
     db.add(run)
 
     needs_human = (extra or {}).get("needs_human", False)
@@ -194,6 +230,4 @@ def _safe_kwargs(call_kwargs: dict[str, Any]) -> dict[str, Any]:
 def _is_unserializable(value: Any) -> bool:
     if isinstance(value, AsyncSession):
         return True
-    if hasattr(value, "redis"):
-        return True
-    return False
+    return bool(hasattr(value, "redis"))

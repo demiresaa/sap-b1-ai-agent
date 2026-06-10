@@ -18,7 +18,7 @@ from typing import Any
 import httpx
 
 from app.core.config import settings
-from app.sap.errors import HTTP_STATUS_MAP, SAPError, sap_error_from_response
+from app.sap.errors import SAPError, sap_error_from_response
 
 logger = logging.getLogger(__name__)
 
@@ -32,13 +32,19 @@ BACKOFF_BASE_SECONDS = 1.0
 class SAPServiceLayerClient:
     """Service Layer base client. Session pool tarafından yönetilir."""
 
-    def __init__(self, base_url: str | None = None) -> None:
+    def __init__(
+        self,
+        base_url: str | None = None,
+        credentials: dict[str, str] | None = None,
+    ) -> None:
         self.base_url = base_url or settings.sap_service_layer_url
+        # Tenant'a özgü kimlik bilgileri — None ise settings env'leri kullanılır
+        self._credentials = credentials
         self._client: httpx.AsyncClient | None = None
         self._session_id: str | None = None
         self._route_id: str | None = None
 
-    async def __aenter__(self) -> "SAPServiceLayerClient":
+    async def __aenter__(self) -> SAPServiceLayerClient:
         self._client = httpx.AsyncClient(
             base_url=self.base_url,
             verify=settings.sap_verify_ssl,
@@ -62,13 +68,18 @@ class SAPServiceLayerClient:
     async def login(self) -> None:
         """POST /Login → B1SESSION + ROUTEID cookies set edilir."""
         assert self._client is not None
+        creds = self._credentials or {
+            "username": settings.sap_username,
+            "password": settings.sap_password,
+            "company_db": settings.sap_company_db,
+        }
         try:
             resp = await self._client.post(
                 "/Login",
                 json={
-                    "CompanyDB": settings.sap_company_db,
-                    "UserName": settings.sap_username,
-                    "Password": settings.sap_password,
+                    "CompanyDB": creds["company_db"],
+                    "UserName": creds["username"],
+                    "Password": creds["password"],
                 },
             )
         except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout) as exc:

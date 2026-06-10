@@ -3,9 +3,10 @@
 Stratejiler (sırayla, ilki bulduğunda durur):
   1. Barkod exact
   2. ItemCode exact (PDF'ten gelen kod ile)
-  3. Müşteri-özel ürün alias
-  4. Fuzzy ad (rapidfuzz token_set_ratio) > 85
-  5. pgvector semantic search (description embedding) — Faz 2'de aktif
+  3. Müşteri-özel ürün alias (exact)
+  3.5. Geçmiş onaylı eşleşme — RAG semantic (CustomerAlias embedding)
+  4. pgvector semantic search (ItemEmbedding) — Faz 2'de aktif
+  5. Fuzzy ad (rapidfuzz token_set_ratio) > 85
 
 Skor < 0.85 → human-in-the-loop. Her satır için ayrı eşleme + en yakın 5 aday döner.
 """
@@ -14,12 +15,14 @@ from __future__ import annotations
 from typing import Any
 
 from rapidfuzz import fuzz, process
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.base import AgentContext, AgentResult, BaseAgent
+from app.agents.llm_client import get_embeddings
 from app.agents.schemas import ExtractedLine, ProductMatch
-from app.db.models import CustomerAlias, ItemCache
+from app.core.config import settings
+from app.db.models import CustomerAlias, ItemCache, ItemEmbedding
 
 FUZZY_THRESHOLD = 85
 HIGH_CONFIDENCE = 0.85
@@ -94,7 +97,16 @@ class ProductMatcherAgent(BaseAgent):
             if aliased:
                 return aliased.model_copy(update={"line_no": line.line_no})
 
+        if line.description and settings.embedding_enabled:
+            rag = await _rag_alias_search(db, line.line_no, line.description, customer_card_code)
+            if rag and rag.item_code:
+                return rag
+
         if line.description:
+            if settings.embedding_enabled:
+                sem = await _semantic_search(db, line.line_no, line.description)
+                if sem and sem.item_code:
+                    return sem
             return await _fuzzy(db, line.line_no, line.description)
 
         return ProductMatch(line_no=line.line_no)
@@ -135,11 +147,157 @@ async def _by_alias(
     )
 
 
+RAG_DISTANCE_THRESHOLD = 0.25   # alias RAG — biraz daha sıkı (onaylı eşleşme)
+RAG_TOP_K = 10
+SEMANTIC_DISTANCE_THRESHOLD = 0.30  # cosine distance ≤ 0.30 → similarity ≥ 0.70
+SEMANTIC_TOP_K = 20
+
+
+async def _rag_alias_search(
+    db: AsyncSession,
+    line_no: int,
+    description: str,
+    customer_card_code: str | None,
+) -> ProductMatch | None:
+    """Geçmiş onaylı alias kayıtlarında embedding semantic arama (RAG).
+
+    Operatör tarafından daha önce onaylanan description→item_code eşleşmelerinin
+    vektörlerine sorgu yapılır. Aynı müşteri tercih edilir; bulunamazsa tüm
+    alias'lara genişler.
+    """
+    try:
+        vectors = await get_embeddings([description])
+    except Exception:
+        return None
+    if not vectors:
+        return None
+    query_vec = vectors[0]
+
+    # Önce müşteriye özel alias'lara bak
+    base_stmt = (
+        select(CustomerAlias, ItemCache)
+        .join(ItemCache, ItemCache.item_code == CustomerAlias.target_code)
+        .where(CustomerAlias.target_kind == "item")
+        .where(CustomerAlias.embedding.isnot(None))  # type: ignore[attr-defined]
+        .order_by(CustomerAlias.embedding.cosine_distance(query_vec))  # type: ignore[attr-defined]
+        .limit(RAG_TOP_K)
+    )
+    if customer_card_code:
+        rows = (
+            await db.execute(base_stmt.where(CustomerAlias.card_code == customer_card_code))
+        ).all()
+        if not rows:
+            rows = (await db.execute(base_stmt)).all()
+    else:
+        rows = (await db.execute(base_stmt)).all()
+
+    if not rows:
+        return None
+
+    alias, item = rows[0]
+    dist = float(alias.embedding.cosine_distance(query_vec))  # type: ignore[attr-defined]
+    if dist > RAG_DISTANCE_THRESHOLD:
+        return None
+
+    emb_sim = max(0.0, 1.0 - dist)
+    fuzz_score = fuzz.token_set_ratio(description, alias.alias_text)
+    score = 0.6 * emb_sim + 0.4 * (fuzz_score / 100)
+
+    return ProductMatch(
+        line_no=line_no,
+        item_code=item.item_code,
+        item_name=item.item_name,
+        score=round(score, 4),
+        strategy="rag_alias",
+    )
+
+
+async def _semantic_search(
+    db: AsyncSession, line_no: int, description: str
+) -> ProductMatch | None:
+    """Embedding cosine distance ile en yakın item_embeddings kaydını bulur.
+
+    Tablo boşsa veya embedding üretilemezse None döner — fuzzy fallback çalışır.
+    Cosine distance < SEMANTIC_DISTANCE_THRESHOLD olanları rapidfuzz ile re-rank eder.
+    """
+    try:
+        vectors = await get_embeddings([description])
+    except Exception:
+        return None
+    if not vectors:
+        return None
+    query_vec = vectors[0]
+
+    # ANN sorgusu: ivfflat index üzerinden cosine distance sıralı
+    stmt = (
+        select(ItemEmbedding, ItemCache)
+        .join(ItemCache, ItemCache.item_code == ItemEmbedding.item_code)
+        .order_by(ItemEmbedding.embedding.cosine_distance(query_vec))
+        .limit(SEMANTIC_TOP_K)
+    )
+    rows = (await db.execute(stmt)).all()
+    if not rows:
+        return None
+
+    # Yalnızca threshold altındaki adayları kabul et
+    candidates = []
+    for emb, item in rows:
+        dist = float(emb.embedding.cosine_distance(query_vec))  # type: ignore[attr-defined]
+        if dist <= SEMANTIC_DISTANCE_THRESHOLD:
+            candidates.append((item, dist))
+
+    if not candidates:
+        return None
+
+    # rapidfuzz re-rank — aynı embedding mesafesine sahip birden fazla adayda ayırt eder
+    names = [c[0].item_name for c in candidates]
+    best = process.extractOne(description, names, scorer=fuzz.token_set_ratio)
+    if not best:
+        item = candidates[0][0]
+        dist = candidates[0][1]
+        score = max(0.0, 1.0 - dist)
+    else:
+        _, fuzz_score, idx = best
+        item = candidates[idx][0]
+        dist = candidates[idx][1]
+        # Hibrit skor: embedding similarity + fuzzy score, ağırlıklı ortalama
+        emb_sim = max(0.0, 1.0 - dist)
+        score = 0.6 * emb_sim + 0.4 * (fuzz_score / 100)
+
+    summary_fn = lambda it: {  # noqa: E731
+        "item_code": it.item_code,
+        "item_name": it.item_name,
+        "bar_code": it.bar_code,
+    }
+    others = [
+        summary_fn(c[0]) for c in candidates[:MAX_CANDIDATES] if c[0].item_code != item.item_code
+    ]
+    return ProductMatch(
+        line_no=line_no,
+        item_code=item.item_code,
+        item_name=item.item_name,
+        score=round(score, 4),
+        strategy="semantic",
+        candidates=others,
+    )
+
+
 async def _fuzzy(db: AsyncSession, line_no: int, description: str) -> ProductMatch:
-    token = description.split()[0].lower() if description else ""
+    # İlk 2 token'dan herhangi birini içeren kayıtları al (OR).
+    # foreign_name_lower da dahil — üretici/model adı orada olabilir.
+    tokens = description.lower().split()[:2]
+    if not tokens:
+        return ProductMatch(line_no=line_no)
+
+    conditions = []
+    for tok in tokens:
+        conditions.append(ItemCache.item_name_lower.like(f"%{tok}%"))
+        if ItemCache.foreign_name is not None:
+            conditions.append(ItemCache.foreign_name.like(f"%{tok}%"))
+
     stmt = (
         select(ItemCache)
-        .where(ItemCache.item_name_lower.like(f"%{token}%"))
+        .where(or_(*conditions))
         .limit(NAME_TOKEN_LIMIT)
     )
     result = await db.execute(stmt)

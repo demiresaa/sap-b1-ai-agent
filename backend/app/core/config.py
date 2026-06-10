@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     app_env: str = "development"
-    app_secret_key: str = "change-me"
+    app_secret_key: str = "change-me"  # noqa: S105
     app_base_url: str = "http://localhost:8000"
 
     database_url: str
@@ -29,6 +29,15 @@ class Settings(BaseSettings):
     sap_max_concurrent_sessions: int = 4
     # Dry-run: SAP'a yazma, sadece JSON payload'ı üret. Tenant'ta override edilebilir.
     sap_dry_run: bool = True
+
+    # Yüksek güven (≥0.95) pipeline sonucunu otomatik SAP'a gönder.
+    # Pilot'ta False — operatör her belgeyi kontrol eder. Prod'da True yapılabilir.
+    auto_submit_on_high_confidence: bool = False
+
+    # Embedding — semantic ürün eşleştirme (Faz 2)
+    embedding_enabled: bool = False  # Pilot'ta False; sync sırasında OpenRouter çağrısı yapar
+    embedding_model: str = "openai/text-embedding-3-small"  # 1536 dim, OpenRouter üzerinden
+    embedding_batch_size: int = 100  # Tek API çağrısında kaç item embed edilecek
 
     # HashiCorp Vault — secret kaynağı (SAP credential, OpenRouter key vs.)
     vault_enabled: bool = False
@@ -66,6 +75,28 @@ class Settings(BaseSettings):
     email_folder: str = "INBOX"
     email_poll_interval_seconds: int = 300
 
+    # Microsoft Graph — IMAP yerine OAuth2 client credentials ile e-posta okuma
+    ms_graph_enabled: bool = False
+    ms_tenant_id: str = ""
+    ms_client_id: str = ""
+    ms_client_secret: str = ""
+    ms_graph_mailbox: str = ""  # kullanıcı UPN veya ID (örn. satis@firma.com)
+    ms_graph_poll_interval_minutes: int = 5
+
+    # e-Fatura — GİB entegratör adapter (Logo / Foriba / İzibiz)
+    einvoice_enabled: bool = False
+    einvoice_provider: str = "logo"  # "logo" | "foriba" | "izibiz"
+    einvoice_api_key: str = ""
+    einvoice_api_url: str = ""
+
+    # SSO — OIDC (Azure AD / Google)
+    oidc_enabled: bool = False
+    oidc_provider: str = "azure"  # "azure" | "google"
+    oidc_client_id: str = ""
+    oidc_client_secret: str = ""
+    oidc_tenant_id: str = ""  # Azure AD tenant ID (azure provider için)
+    oidc_redirect_uri: str = "http://localhost:3000/auth/callback"
+
     sentry_dsn: str = ""
     otel_exporter_otlp_endpoint: str = ""
 
@@ -81,9 +112,9 @@ class Settings(BaseSettings):
     data_retention_days_audit_log: int = 2555  # 7 yıl
 
     @model_validator(mode="after")
-    def _validate_production_secrets(self) -> "Settings":
+    def _validate_production_secrets(self) -> Settings:
         if self.app_env == "production":
-            if self.app_secret_key == "change-me":
+            if self.app_secret_key == "change-me":  # noqa: S105
                 raise ValueError(
                     "Production'da APP_SECRET_KEY varsayılan değer olamaz; "
                     "`openssl rand -hex 32` ile üretin."

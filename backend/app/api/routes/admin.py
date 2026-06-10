@@ -9,6 +9,7 @@ from sqlalchemy import select
 
 from app.api.deps import DbSession, require_roles
 from app.db.models import Tenant, UserRole
+from app.workers.sync_tasks import sync_bp_full, sync_items_full, sync_items_incremental
 
 router = APIRouter(tags=["admin"], dependencies=[Depends(require_roles(UserRole.ADMIN))])
 
@@ -63,6 +64,27 @@ async def patch_tenant(slug: str, patch: TenantPatch, db: DbSession) -> TenantOu
         setattr(t, field, value)
     await db.flush()
     return TenantOut.model_validate(t)
+
+
+@router.post("/sync/items", summary="Tam item sync'i tetikle")
+async def trigger_sync_items() -> dict[str, str]:
+    """SAP'taki tüm aktif Items'ı item_cache'e senkronize eder (Celery kuyruğuna atar)."""
+    sync_items_full.delay()
+    return {"status": "queued", "task": "sync.items.full"}
+
+
+@router.post("/sync/items/incremental", summary="Incremental item sync'i tetikle")
+async def trigger_sync_items_incremental() -> dict[str, str]:
+    """Dün güncellenen Items'ı item_cache'e senkronize eder."""
+    sync_items_incremental.delay()
+    return {"status": "queued", "task": "sync.items.incremental"}
+
+
+@router.post("/sync/bp", summary="Tam BP sync'i tetikle")
+async def trigger_sync_bp() -> dict[str, str]:
+    """SAP'taki tüm aktif müşterileri bp_cache'e senkronize eder."""
+    sync_bp_full.delay()
+    return {"status": "queued", "task": "sync.bp.full"}
 
 
 async def _fetch_or_404(db, slug: str) -> Tenant:
