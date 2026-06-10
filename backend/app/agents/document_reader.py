@@ -21,6 +21,7 @@ import pdfplumber
 from app.agents.base import AgentContext, AgentResult, BaseAgent
 from app.agents.llm_client import call_anthropic_json, call_llm_with_tools
 from app.agents.schemas import ExtractedDocument
+from app.services.docx_parser import parse_docx
 from app.services.excel_parser import ExcelSheet, parse_excel
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,7 @@ logger = logging.getLogger(__name__)
 MIN_TEXT_LENGTH = 50
 
 EXCEL_EXTENSIONS = {".xlsx", ".xls", ".xlsm"}
+DOCX_EXTENSIONS = {".docx", ".doc"}
 
 SYSTEM_PROMPT = """You are a document processing assistant for SAP Business One.
 Extract structured sales order / quotation data from the provided document (PDF or Excel).
@@ -94,6 +96,15 @@ class DocumentReaderAgent(BaseAgent):
             sheet = parse_excel(path)
             extracted = await _extract_via_excel(sheet)
             raw_text_length = len(sheet.to_prompt_text())
+        elif suffix in DOCX_EXTENSIONS:
+            logger.info("[doc_reader] DOCX ingest: %s", path.name)
+            content = parse_docx(path)
+            text = content.to_prompt_text()
+            raw_text_length = len(text)
+            if sap_client is not None:
+                extracted = await _extract_via_text_with_tools(text, sap_client)
+            else:
+                extracted = await _extract_via_text(text)
         else:
             text = _extract_text(path)
             raw_text_length = len(text)
@@ -133,7 +144,11 @@ class DocumentReaderAgent(BaseAgent):
                 "extracted": extracted.model_dump(mode="json"),
                 "used_vision": used_vision,
                 "raw_text_length": raw_text_length,
-                "source": "excel" if suffix in EXCEL_EXTENSIONS else "pdf",
+                "source": (
+                    "excel" if suffix in EXCEL_EXTENSIONS
+                    else "docx" if suffix in DOCX_EXTENSIONS
+                    else "pdf"
+                ),
             },
             needs_human=needs_human,
             human_reason=reason,

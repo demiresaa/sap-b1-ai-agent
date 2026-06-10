@@ -75,6 +75,14 @@ class Settings(BaseSettings):
     email_folder: str = "INBOX"
     email_poll_interval_seconds: int = 300
 
+    # Microsoft Graph — IMAP yerine OAuth2 client credentials ile e-posta okuma
+    ms_graph_enabled: bool = False
+    ms_tenant_id: str = ""
+    ms_client_id: str = ""
+    ms_client_secret: str = ""
+    ms_graph_mailbox: str = ""  # kullanıcı UPN veya ID (örn. satis@firma.com)
+    ms_graph_poll_interval_minutes: int = 5
+
     sentry_dsn: str = ""
     otel_exporter_otlp_endpoint: str = ""
 

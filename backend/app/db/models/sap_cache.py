@@ -77,6 +77,7 @@ class CustomerAlias(Base, TimestampMixin):
 
     Örnek: müşteri PDF'te "Vana 1/2 inch" yazıyor, gerçek ItemCode "A0001".
     Operatör düzeltmesi sonrası alias kaydedilir, sonraki sefer otomatik eşler.
+    embedding: alias_text'in vektör temsili — RAG semantic arama için.
     """
 
     __tablename__ = "customer_alias"
@@ -92,3 +93,5 @@ class CustomerAlias(Base, TimestampMixin):
     target_code: Mapped[str] = mapped_column(String(50), nullable=False)
     confidence: Mapped[float] = mapped_column(Numeric(4, 3), nullable=False, default=1.0)
     confirmed_by_user_id: Mapped[str | None] = mapped_column(String(36))
+    # Semantic RAG — Faz 2. None ise eski kayıt veya embedding üretilmemiş.
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(EMBEDDING_DIM), nullable=True)

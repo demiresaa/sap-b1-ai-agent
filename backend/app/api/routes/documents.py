@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 import io
+import logging
 from datetime import UTC, datetime
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, BackgroundTasks, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
@@ -653,8 +656,11 @@ async def save_aliases(
     """Operatör düzeltmelerini CustomerAlias tablosuna kaydeder.
 
     Bir sonraki aynı müşteriden gelen PDF'te bu eşleşmeler otomatik kullanılır
-    (score=1.0, strategy='alias'). Learning loop.
+    (score=1.0, strategy='alias'). Learning loop — embedding_enabled ise
+    alias metinleri için vektör de üretilir (RAG semantic arama için).
     """
+    from app.agents.llm_client import get_embeddings
+    from app.core.config import settings
     from app.db.models import CustomerAlias
 
     if not aliases:
@@ -662,8 +668,17 @@ async def save_aliases(
 
     await _get_doc_or_404(db, document_id)
 
+    embeddings: list[list[float] | None] = [None] * len(aliases)
+    if settings.embedding_enabled:
+        try:
+            texts = [a.alias_text for a in aliases]
+            vecs = await get_embeddings(texts)
+            embeddings = list(vecs)  # type: ignore[assignment]
+        except Exception:
+            logger.warning("[aliases] embedding üretilemedi, None ile devam")
+
     now = utcnow()
-    for a in aliases:
+    for i, a in enumerate(aliases):
         db.add(
             CustomerAlias(
                 card_code=a.card_code or "",
@@ -673,6 +688,7 @@ async def save_aliases(
                 target_code=a.target_code,
                 confidence=1.0,
                 confirmed_by_user_id=user.id,
+                embedding=embeddings[i],
                 created_at=now,
                 updated_at=now,
             )

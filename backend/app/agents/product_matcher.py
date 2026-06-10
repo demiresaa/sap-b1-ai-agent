@@ -3,9 +3,10 @@
 Stratejiler (sırayla, ilki bulduğunda durur):
   1. Barkod exact
   2. ItemCode exact (PDF'ten gelen kod ile)
-  3. Müşteri-özel ürün alias
-  4. Fuzzy ad (rapidfuzz token_set_ratio) > 85
-  5. pgvector semantic search (description embedding) — Faz 2'de aktif
+  3. Müşteri-özel ürün alias (exact)
+  3.5. Geçmiş onaylı eşleşme — RAG semantic (CustomerAlias embedding)
+  4. pgvector semantic search (ItemEmbedding) — Faz 2'de aktif
+  5. Fuzzy ad (rapidfuzz token_set_ratio) > 85
 
 Skor < 0.85 → human-in-the-loop. Her satır için ayrı eşleme + en yakın 5 aday döner.
 """
@@ -96,6 +97,11 @@ class ProductMatcherAgent(BaseAgent):
             if aliased:
                 return aliased.model_copy(update={"line_no": line.line_no})
 
+        if line.description and settings.embedding_enabled:
+            rag = await _rag_alias_search(db, line.line_no, line.description, customer_card_code)
+            if rag and rag.item_code:
+                return rag
+
         if line.description:
             if settings.embedding_enabled:
                 sem = await _semantic_search(db, line.line_no, line.description)
@@ -141,8 +147,69 @@ async def _by_alias(
     )
 
 
+RAG_DISTANCE_THRESHOLD = 0.25   # alias RAG — biraz daha sıkı (onaylı eşleşme)
+RAG_TOP_K = 10
 SEMANTIC_DISTANCE_THRESHOLD = 0.30  # cosine distance ≤ 0.30 → similarity ≥ 0.70
 SEMANTIC_TOP_K = 20
+
+
+async def _rag_alias_search(
+    db: AsyncSession,
+    line_no: int,
+    description: str,
+    customer_card_code: str | None,
+) -> ProductMatch | None:
+    """Geçmiş onaylı alias kayıtlarında embedding semantic arama (RAG).
+
+    Operatör tarafından daha önce onaylanan description→item_code eşleşmelerinin
+    vektörlerine sorgu yapılır. Aynı müşteri tercih edilir; bulunamazsa tüm
+    alias'lara genişler.
+    """
+    try:
+        vectors = await get_embeddings([description])
+    except Exception:
+        return None
+    if not vectors:
+        return None
+    query_vec = vectors[0]
+
+    # Önce müşteriye özel alias'lara bak
+    base_stmt = (
+        select(CustomerAlias, ItemCache)
+        .join(ItemCache, ItemCache.item_code == CustomerAlias.target_code)
+        .where(CustomerAlias.target_kind == "item")
+        .where(CustomerAlias.embedding.isnot(None))  # type: ignore[attr-defined]
+        .order_by(CustomerAlias.embedding.cosine_distance(query_vec))  # type: ignore[attr-defined]
+        .limit(RAG_TOP_K)
+    )
+    if customer_card_code:
+        rows = (
+            await db.execute(base_stmt.where(CustomerAlias.card_code == customer_card_code))
+        ).all()
+        if not rows:
+            rows = (await db.execute(base_stmt)).all()
+    else:
+        rows = (await db.execute(base_stmt)).all()
+
+    if not rows:
+        return None
+
+    alias, item = rows[0]
+    dist = float(alias.embedding.cosine_distance(query_vec))  # type: ignore[attr-defined]
+    if dist > RAG_DISTANCE_THRESHOLD:
+        return None
+
+    emb_sim = max(0.0, 1.0 - dist)
+    fuzz_score = fuzz.token_set_ratio(description, alias.alias_text)
+    score = 0.6 * emb_sim + 0.4 * (fuzz_score / 100)
+
+    return ProductMatch(
+        line_no=line_no,
+        item_code=item.item_code,
+        item_name=item.item_name,
+        score=round(score, 4),
+        strategy="rag_alias",
+    )
 
 
 async def _semantic_search(
