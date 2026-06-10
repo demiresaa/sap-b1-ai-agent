@@ -18,8 +18,10 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.base import AgentContext, AgentResult, BaseAgent
+from app.agents.llm_client import get_embeddings
 from app.agents.schemas import ExtractedLine, ProductMatch
-from app.db.models import CustomerAlias, ItemCache
+from app.core.config import settings
+from app.db.models import CustomerAlias, ItemCache, ItemEmbedding
 
 FUZZY_THRESHOLD = 85
 HIGH_CONFIDENCE = 0.85
@@ -95,6 +97,10 @@ class ProductMatcherAgent(BaseAgent):
                 return aliased.model_copy(update={"line_no": line.line_no})
 
         if line.description:
+            if settings.embedding_enabled:
+                sem = await _semantic_search(db, line.line_no, line.description)
+                if sem and sem.item_code:
+                    return sem
             return await _fuzzy(db, line.line_no, line.description)
 
         return ProductMatch(line_no=line.line_no)
@@ -132,6 +138,80 @@ async def _by_alias(
         item_name=item.item_name,
         score=float(alias.confidence),
         strategy="alias",
+    )
+
+
+SEMANTIC_DISTANCE_THRESHOLD = 0.30  # cosine distance ≤ 0.30 → similarity ≥ 0.70
+SEMANTIC_TOP_K = 20
+
+
+async def _semantic_search(
+    db: AsyncSession, line_no: int, description: str
+) -> ProductMatch | None:
+    """Embedding cosine distance ile en yakın item_embeddings kaydını bulur.
+
+    Tablo boşsa veya embedding üretilemezse None döner — fuzzy fallback çalışır.
+    Cosine distance < SEMANTIC_DISTANCE_THRESHOLD olanları rapidfuzz ile re-rank eder.
+    """
+    try:
+        vectors = await get_embeddings([description])
+    except Exception:
+        return None
+    if not vectors:
+        return None
+    query_vec = vectors[0]
+
+    # ANN sorgusu: ivfflat index üzerinden cosine distance sıralı
+    stmt = (
+        select(ItemEmbedding, ItemCache)
+        .join(ItemCache, ItemCache.item_code == ItemEmbedding.item_code)
+        .order_by(ItemEmbedding.embedding.cosine_distance(query_vec))
+        .limit(SEMANTIC_TOP_K)
+    )
+    rows = (await db.execute(stmt)).all()
+    if not rows:
+        return None
+
+    # Yalnızca threshold altındaki adayları kabul et
+    candidates = []
+    for emb, item in rows:
+        dist = float(emb.embedding.cosine_distance(query_vec))  # type: ignore[attr-defined]
+        if dist <= SEMANTIC_DISTANCE_THRESHOLD:
+            candidates.append((item, dist))
+
+    if not candidates:
+        return None
+
+    # rapidfuzz re-rank — aynı embedding mesafesine sahip birden fazla adayda ayırt eder
+    names = [c[0].item_name for c in candidates]
+    best = process.extractOne(description, names, scorer=fuzz.token_set_ratio)
+    if not best:
+        item = candidates[0][0]
+        dist = candidates[0][1]
+        score = max(0.0, 1.0 - dist)
+    else:
+        _, fuzz_score, idx = best
+        item = candidates[idx][0]
+        dist = candidates[idx][1]
+        # Hibrit skor: embedding similarity + fuzzy score, ağırlıklı ortalama
+        emb_sim = max(0.0, 1.0 - dist)
+        score = 0.6 * emb_sim + 0.4 * (fuzz_score / 100)
+
+    summary_fn = lambda it: {  # noqa: E731
+        "item_code": it.item_code,
+        "item_name": it.item_name,
+        "bar_code": it.bar_code,
+    }
+    others = [
+        summary_fn(c[0]) for c in candidates[:MAX_CANDIDATES] if c[0].item_code != item.item_code
+    ]
+    return ProductMatch(
+        line_no=line_no,
+        item_code=item.item_code,
+        item_name=item.item_name,
+        score=round(score, 4),
+        strategy="semantic",
+        candidates=others,
     )
 
 

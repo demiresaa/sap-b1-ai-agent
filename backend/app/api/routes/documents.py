@@ -681,6 +681,30 @@ async def save_aliases(
     return {"saved": len(aliases)}
 
 
+@router.get("/{document_id}/timeline")
+async def get_timeline(
+    document_id: str,
+    user: CurrentUser,
+    db: DbSession,
+) -> list[dict]:
+    """Belgeye ait tüm olayları kronolojik sırayla döner."""
+    await _get_doc_or_404(db, document_id)
+    result = await db.execute(
+        select(DocumentEvent)
+        .where(DocumentEvent.document_id == document_id)
+        .order_by(DocumentEvent.created_at)
+    )
+    events = result.scalars().all()
+    return [
+        {
+            "event_type": e.event_type,
+            "payload": e.payload,
+            "created_at": e.created_at.isoformat(),
+        }
+        for e in events
+    ]
+
+
 async def _get_doc_or_404(db, document_id: str) -> Document:
     result = await db.execute(select(Document).where(Document.id == document_id))
     doc = result.scalar_one_or_none()

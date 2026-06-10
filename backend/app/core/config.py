@@ -34,6 +34,11 @@ class Settings(BaseSettings):
     # Pilot'ta False — operatör her belgeyi kontrol eder. Prod'da True yapılabilir.
     auto_submit_on_high_confidence: bool = False
 
+    # Embedding — semantic ürün eşleştirme (Faz 2)
+    embedding_enabled: bool = False  # Pilot'ta False; sync sırasında OpenRouter çağrısı yapar
+    embedding_model: str = "openai/text-embedding-3-small"  # 1536 dim, OpenRouter üzerinden
+    embedding_batch_size: int = 100  # Tek API çağrısında kaç item embed edilecek
+
     # HashiCorp Vault — secret kaynağı (SAP credential, OpenRouter key vs.)
     vault_enabled: bool = False
     vault_addr: str = "http://localhost:8200"

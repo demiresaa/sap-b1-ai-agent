@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Response, WebSocket, WebSocketDisconnect
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -17,6 +17,7 @@ from app.core.logging import configure_logging
 from app.core.metrics import metrics_response
 from app.core.middleware import RateLimitMiddleware, RequestContextMiddleware
 from app.core.observability import init_otel, init_sentry
+from app.core.redis_events import subscribe_document_events
 from app.sap import SAPError, pool
 
 configure_logging(level="INFO", json_format=settings.app_env != "development")
@@ -96,3 +97,22 @@ app.include_router(sap.router, prefix="/api/sap")
 app.include_router(analytics.router, prefix="/api/analytics")
 app.include_router(debug.router, prefix="/api/debug")
 app.include_router(admin.router, prefix="/api/admin")
+
+
+@app.websocket("/ws/documents/{document_id}/status")
+async def ws_document_status(websocket: WebSocket, document_id: str) -> None:
+    """Belge işleme olaylarını gerçek zamanlı iletir (Redis pub/sub → WebSocket).
+
+    Client bağlandığında o belgeye ait kanalı dinlemeye başlar. Her agent adımı,
+    durum değişikliği ve hata anında JSON mesaj olarak iletilir.
+    """
+    await websocket.accept()
+    try:
+        async for event in subscribe_document_events(document_id):
+            await websocket.send_json(event)
+            if event.get("event") in {"processing_done", "processing_error"}:
+                break
+    except WebSocketDisconnect:
+        pass
+    except Exception:
+        logger.exception("[ws] doc=%s beklenmeyen hata", document_id)

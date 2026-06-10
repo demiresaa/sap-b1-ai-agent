@@ -28,6 +28,7 @@ from app.agents.pricing import PricingAgent
 from app.agents.product_matcher import ProductMatcherAgent
 from app.agents.schemas import ExtractedDocument
 from app.agents.stock import StockAgent
+from app.core.redis_events import publish_document_event
 from app.db.base import utcnow
 from app.db.models import AgentRun, AgentStep
 
@@ -55,6 +56,7 @@ class OrchestratorAgent(BaseAgent):
         ctx: AgentContext,
         file_path: str | None = None,
         db: AsyncSession | None = None,
+        sap_client: Any | None = None,
         **kwargs: Any,
     ) -> AgentResult:
         if db is None:
@@ -78,6 +80,10 @@ class OrchestratorAgent(BaseAgent):
             nonlocal step_order
             step_order += 1
             started = utcnow()
+            await publish_document_event(
+                ctx.document_id,
+                {"event": "agent_started", "agent": agent.name, "step": step_order},
+            )
             result = await agent.run(ctx, **call_kwargs)
             db.add(
                 AgentStep(
@@ -93,10 +99,24 @@ class OrchestratorAgent(BaseAgent):
                 )
             )
             await db.flush()
+            await publish_document_event(
+                ctx.document_id,
+                {
+                    "event": "agent_done",
+                    "agent": agent.name,
+                    "step": step_order,
+                    "success": result.success,
+                    "confidence": result.confidence,
+                    "needs_human": result.needs_human,
+                    "duration_ms": result.duration_ms,
+                },
+            )
             return result
 
         # 1. DocumentReader
-        reader_result = await _step(DocumentReaderAgent(), file_path=file_path)
+        reader_result = await _step(
+            DocumentReaderAgent(), file_path=file_path, sap_client=sap_client
+        )
         steps_results["document_reader"] = reader_result
         if not reader_result.success:
             return _finalize(db, run, "failed", reader_result.error, steps_results)

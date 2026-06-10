@@ -18,6 +18,7 @@ from app.agents.base import AgentContext
 from app.agents.orchestrator import OrchestratorAgent
 from app.agents.sap_writer import SAPWriterAgent
 from app.core.config import settings
+from app.core.redis_events import publish_document_event
 from app.db.base import new_uuid, utcnow
 from app.db.models import (
     Document,
@@ -139,6 +140,7 @@ async def _process_document_async(document_id: str) -> dict[str, Any]:
         doc.status = DocumentStatus.READING
         await db.flush()
         await db.commit()  # status değişimi UI'da hemen görünsün
+        await publish_document_event(document_id, {"event": "processing_started"})
 
     # Yeni session — agent run sırasında bağımsız transaction
     async with SessionFactory() as db:
@@ -162,6 +164,9 @@ async def _process_document_async(document_id: str) -> dict[str, Any]:
                 )
             )
             await db.commit()
+            await publish_document_event(
+                document_id, {"event": "processing_error", "error": str(exc)}
+            )
             return {"error": str(exc)}
 
         extracted = (result.data or {}).get("extracted") or {}
@@ -198,6 +203,16 @@ async def _process_document_async(document_id: str) -> dict[str, Any]:
             )
         )
         await db.commit()
+        await publish_document_event(
+            document_id,
+            {
+                "event": "processing_done",
+                "status": doc.status.value,
+                "confidence": result.confidence,
+                "confidence_tier": confidence_tier,
+                "needs_human": result.needs_human,
+            },
+        )
 
         # Tam otonom path: yüksek güven + sap_dry_run=False + flag açık → otomatik gönder
         if (

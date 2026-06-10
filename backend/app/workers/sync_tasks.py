@@ -17,8 +17,10 @@ from typing import Any
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agents.llm_client import get_embeddings
+from app.core.config import settings
 from app.db.base import utcnow
-from app.db.models import BusinessPartnerCache, ItemCache
+from app.db.models import BusinessPartnerCache, ItemCache, ItemEmbedding
 from app.db.session import SessionFactory
 from app.sap.odata import ODataQuery, eq
 from app.sap.session import pool
@@ -71,6 +73,8 @@ async def _sync_items_async(*, incremental: bool) -> dict[str, int]:
             if not batch:
                 break
             await _upsert_items(db, batch)
+            if settings.embedding_enabled:
+                await _generate_embeddings(db, batch)
             await db.commit()
             total += len(batch)
             logger.info("[sync_items] %d item işlendi (skip=%d)", total, skip)
@@ -263,6 +267,60 @@ async def _upsert_bp(db: AsyncSession, bps: list[dict[str, Any]]) -> None:
         },
     )
     await db.execute(stmt)
+
+
+async def _generate_embeddings(db: AsyncSession, items: list[dict[str, Any]]) -> None:
+    """item_embeddings tablosunu OpenRouter text-embedding ile upsert eder.
+
+    settings.embedding_enabled=False ise çağrılmaz (maliyet/süre kontrolü).
+    Batch boyutu: settings.embedding_batch_size (default 100).
+    """
+    if not items:
+        return
+
+    now = utcnow()
+    model = settings.embedding_model
+    batch_size = settings.embedding_batch_size
+
+    for i in range(0, len(items), batch_size):
+        chunk = items[i : i + batch_size]
+        source_texts = [
+            f"{it.get('ItemName', '')} {it.get('ForeignName', '') or ''}".strip()
+            for it in chunk
+        ]
+        try:
+            vectors = await get_embeddings(source_texts, model=model)
+        except Exception:
+            logger.exception("[sync_items] embedding üretimi başarısız, atlanıyor")
+            continue
+
+        rows = [
+            {
+                "item_code": chunk[j]["ItemCode"],
+                "source_text": source_texts[j],
+                "embedding": vectors[j],
+                "model": model,
+                "created_at": now,
+                "updated_at": now,
+            }
+            for j in range(len(chunk))
+            if j < len(vectors)
+        ]
+        if not rows:
+            continue
+
+        stmt = pg_insert(ItemEmbedding).values(rows)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["item_code"],
+            set_={
+                "source_text": stmt.excluded.source_text,
+                "embedding": stmt.excluded.embedding,
+                "model": stmt.excluded.model,
+                "updated_at": stmt.excluded.updated_at,
+            },
+        )
+        await db.execute(stmt)
+        logger.info("[sync_items] %d embedding üretildi (offset=%d)", len(rows), i)
 
 
 def _normalize(text: str) -> str:

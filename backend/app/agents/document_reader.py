@@ -19,7 +19,7 @@ from typing import Any
 import pdfplumber
 
 from app.agents.base import AgentContext, AgentResult, BaseAgent
-from app.agents.llm_client import call_anthropic_json
+from app.agents.llm_client import call_anthropic_json, call_llm_with_tools
 from app.agents.schemas import ExtractedDocument
 from app.services.excel_parser import ExcelSheet, parse_excel
 
@@ -40,19 +40,23 @@ Column names in Excel vary by company — map them to SAP fields yourself:
 "İndirim" / "Discount" → discount_pct
 
 Extract the following fields:
-- kind: "sales_order" or "quotation" (infer from document title: sipariş/order → sales_order, teklif/quotation → quotation)
+- kind: "sales_order" or "quotation"
+  (sipariş/order → sales_order, teklif/quotation → quotation)
 - customer: { name, tax_id, email, phone, address }
 - reference_no: customer's own reference number (NumAtCard)
 - doc_date: document date (YYYY-MM-DD)
 - due_date: delivery / due date (YYYY-MM-DD)
 - currency: TRY, EUR, or USD (infer from ₺/€/$ symbols)
-- lines: array of line items — each with { line_no, description, item_code_raw, barcode, quantity, unit, unit_price, discount_pct, tax_code, total }
+- lines: array of line items, each with:
+  { line_no, description, item_code_raw, barcode, quantity, unit,
+    unit_price, discount_pct, tax_code, total }
 - notes: free-text remarks
 - confidence: 0–1 score per top-level field (e.g. {"customer.name": 0.95, "lines": 0.8})
 
 CRITICAL — item_code_raw rules:
 - item_code_raw must be the manufacturer's product/stock/model code (e.g. "HELVAR-321", "ABC-100").
-- If the document has an explicit "Stok Kodu" / "Ürün Kodu" / "Item Code" / "Model No" column, use that value.
+- If the document has an explicit "Stok Kodu" / "Ürün Kodu" / "Item Code" /
+  "Model No" column, use that value.
 - If no such column exists, use the brand/model identifier (e.g. "Helvar 321") as item_code_raw.
 - NEVER use a position number / BOQ sequence number as item_code_raw.
   In Turkish tender / metraj / BOQ documents, values like "E02.01" or "A01.03" are
@@ -69,7 +73,11 @@ class DocumentReaderAgent(BaseAgent):
     name = "document_reader"
 
     async def _run(
-        self, ctx: AgentContext, file_path: str | None = None, **kwargs: Any
+        self,
+        ctx: AgentContext,
+        file_path: str | None = None,
+        sap_client: Any | None = None,
+        **kwargs: Any,
     ) -> AgentResult:
         if not file_path:
             raise ValueError("file_path zorunlu")
@@ -94,6 +102,9 @@ class DocumentReaderAgent(BaseAgent):
                 logger.info("[doc_reader] text kısa, vision fallback'e geçiliyor")
                 extracted = await _extract_via_vision(path)
                 used_vision = True
+            elif sap_client is not None:
+                logger.info("[doc_reader] tool use aktif, SAP araçları etkin")
+                extracted = await _extract_via_text_with_tools(text, sap_client)
             else:
                 extracted = await _extract_via_text(text)
 
@@ -198,3 +209,88 @@ def _aggregate_confidence(confidence: dict[str, float]) -> float:
     if not confidence:
         return 0.7
     return sum(confidence.values()) / len(confidence)
+
+
+# ---------------------------------------------------------------------------
+# Tool use pattern — Claude SAP'ı sorgulayarak belirsiz alanları doldurabilir
+# ---------------------------------------------------------------------------
+
+SAP_TOOLS: list[dict[str, Any]] = [
+    {
+        "name": "sap_search_items",
+        "description": (
+            "SAP'ta stok kartı ara. Ürün adı veya kodu belirsizse kullan. "
+            "item_code_raw veya description ile SAP ItemCode'u doğrula."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Arama terimi (ürün adı, kodu veya barkod)",
+                }
+            },
+            "required": ["query"],
+        },
+    },
+    {
+        "name": "sap_search_bp",
+        "description": (
+            "SAP'ta iş ortağı (müşteri/tedarikçi) ara. "
+            "Müşteri adı veya vergi numarası belirsizse kullan."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string", "description": "Müşteri adı"},
+                "tax_id": {"type": "string", "description": "Vergi numarası (opsiyonel)"},
+            },
+            "required": ["name"],
+        },
+    },
+]
+
+
+async def _sap_tool_handler(
+    tool_name: str,
+    tool_input: dict[str, Any],
+    sap_client: Any | None,
+) -> Any:
+    """SAP araç çağrılarını yürütür.
+
+    sap_client None ise (örn. birim testlerde) boş liste döner.
+    """
+    if sap_client is None:
+        return []
+    try:
+        if tool_name == "sap_search_items":
+            return await sap_client.get("/Items", **{
+                "$filter": f"contains(ItemName,'{tool_input['query']}')",
+                "$select": "ItemCode,ItemName,BarCode",
+                "$top": "10",
+            })
+        if tool_name == "sap_search_bp":
+            params: dict[str, str] = {
+                "$filter": f"contains(CardName,'{tool_input['name']}')",
+                "$select": "CardCode,CardName,FederalTaxID",
+                "$top": "5",
+            }
+            return await sap_client.get("/BusinessPartners", **params)
+    except Exception as exc:
+        logger.warning("[doc_reader] SAP araç çağrısı başarısız: %s", exc)
+    return []
+
+
+async def _extract_via_text_with_tools(text: str, sap_client: Any) -> ExtractedDocument:
+    """Araç destekli PDF çıkarma — Claude belirsiz alanlarda SAP'ı sorgulayabilir."""
+    import functools
+
+    handler = functools.partial(_sap_tool_handler, sap_client=sap_client)
+    raw = await call_llm_with_tools(
+        system=SYSTEM_PROMPT,
+        user_message=f"PDF içeriği:\n\n{text}",
+        tools=SAP_TOOLS,
+        tool_handler=handler,
+        max_tokens=4096,
+    )
+    return _parse_extracted(raw)

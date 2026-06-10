@@ -76,7 +76,6 @@ async def call_llm_json(
     model = model or settings.llm_model_default
     messages = _build_messages(system=system, user_message=user_message, images_b64=images_b64)
 
-    has_images = bool(images_b64)
     logger.info(
         "[LLM→] model=%s images=%s user_msg=%r",
         model,
@@ -155,6 +154,82 @@ async def call_llm_text(
         _truncate(text, 400),
     )
     return text
+
+
+async def call_llm_with_tools(
+    *,
+    system: str,
+    user_message: str,
+    tools: list[dict[str, Any]],
+    tool_handler: Any,  # Callable[[str, dict], Awaitable[Any]]
+    model: str | None = None,
+    max_tokens: int = 4096,
+    max_tool_rounds: int = 5,
+) -> dict[str, Any]:
+    """Tool use döngüsü: Claude araç çağırabilir, sonuçları tekrar değerlendirir.
+
+    tool_handler(tool_name, tool_input) → Any (JSON-serializable)
+    Dönen değer, Claude'a `tool` rolüyle geri gönderilir.
+    Son döngüde araç yoksa normal JSON yanıt parse edilir.
+    """
+    model = model or settings.llm_model_default
+    messages: list[dict[str, Any]] = [
+        {"role": "system", "content": system},
+        {"role": "user", "content": user_message},
+    ]
+    openai_tools = [{"type": "function", "function": t} for t in tools]
+
+    for _ in range(max_tool_rounds):
+        response = await get_client().chat.completions.create(
+            model=model,
+            messages=messages,  # type: ignore[arg-type]
+            tools=openai_tools,  # type: ignore[arg-type]
+            tool_choice="auto",
+            max_tokens=max_tokens,
+            temperature=0.0,
+        )
+        msg = response.choices[0].message
+        tool_calls = getattr(msg, "tool_calls", None) or []
+
+        if not tool_calls:
+            # Son yanıt — JSON parse
+            raw = (msg.content or "").strip()
+            if raw.startswith("```"):
+                raw = raw.strip("`")
+                if raw.lower().startswith("json"):
+                    raw = raw[4:].lstrip()
+            return json.loads(raw)
+
+        # Araç çağrıları varsa — çalıştır ve mesaj geçmişine ekle
+        messages.append(msg.model_dump(exclude_none=True))  # type: ignore[arg-type]
+        for tc in tool_calls:
+            try:
+                tool_input = json.loads(tc.function.arguments or "{}")
+                result = await tool_handler(tc.function.name, tool_input)
+            except Exception as exc:
+                result = {"error": str(exc)}
+            messages.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": tc.id,
+                    "content": json.dumps(result, ensure_ascii=False),
+                }
+            )
+
+    raise ValueError("Tool use döngüsü max_tool_rounds sınırını aştı")
+
+
+async def get_embeddings(texts: list[str], model: str | None = None) -> list[list[float]]:
+    """Metinleri OpenRouter /embeddings üzerinden vektöre çevirir.
+
+    Sonuç listesi, girdi listesiyle aynı sırada ve boyuttadır.
+    """
+    if not texts:
+        return []
+    model = model or settings.embedding_model
+    response = await get_client().embeddings.create(model=model, input=texts)
+    # OpenAI SDK: response.data sıralı gelir
+    return [item.embedding for item in response.data]
 
 
 # Geriye uyum alias'ları
