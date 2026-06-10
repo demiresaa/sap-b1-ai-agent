@@ -17,23 +17,28 @@ from typing import Any
 from openai import AsyncOpenAI
 
 from app.core.config import settings
+from app.core.vault import get_openrouter_api_key
 
 logger = logging.getLogger(__name__)
 
 _client: AsyncOpenAI | None = None
+_client_api_key: str | None = None
 
 
 def get_client() -> AsyncOpenAI:
-    global _client
-    if _client is None:
+    global _client, _client_api_key
+    # Vault TTL cache'inden güncel key'i al; değişmişse client'i yenile
+    api_key = get_openrouter_api_key()
+    if _client is None or _client_api_key != api_key:
         _client = AsyncOpenAI(
-            api_key=settings.openrouter_api_key,
+            api_key=api_key,
             base_url=settings.openrouter_base_url,
             default_headers={
                 "HTTP-Referer": settings.openrouter_site_url,
                 "X-Title": settings.openrouter_app_name,
             },
         )
+        _client_api_key = api_key
     return _client
 
 

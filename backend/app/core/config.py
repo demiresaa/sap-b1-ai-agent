@@ -89,6 +89,14 @@ class Settings(BaseSettings):
     einvoice_api_key: str = ""
     einvoice_api_url: str = ""
 
+    # SSO — OIDC (Azure AD / Google)
+    oidc_enabled: bool = False
+    oidc_provider: str = "azure"  # "azure" | "google"
+    oidc_client_id: str = ""
+    oidc_client_secret: str = ""
+    oidc_tenant_id: str = ""  # Azure AD tenant ID (azure provider için)
+    oidc_redirect_uri: str = "http://localhost:3000/auth/callback"
+
     sentry_dsn: str = ""
     otel_exporter_otlp_endpoint: str = ""
 

@@ -12,11 +12,12 @@ from sqlalchemy.orm import selectinload
 
 from app.core.security import ACCESS_TYPE, decode_token
 from app.db.models import User, UserRole
-from app.db.session import get_db
+from app.db.session import get_db, get_tenant_db
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
 DbSession = Annotated[AsyncSession, Depends(get_db)]
+TenantDbSession = Annotated[AsyncSession, Depends(get_tenant_db)]
 TokenStr = Annotated[str | None, Depends(oauth2_scheme)]
 
 
@@ -25,8 +26,10 @@ async def get_current_user(token: TokenStr, db: DbSession) -> User:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Oturum gerekli.")
     try:
         payload = decode_token(token, expected_type=ACCESS_TYPE)
-    except JWTError:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Geçersiz veya süresi dolmuş oturum.")
+    except JWTError as exc:
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED, "Geçersiz veya süresi dolmuş oturum."
+        ) from exc
     user_id = payload.get("sub")
     if not user_id:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Geçersiz oturum.")
