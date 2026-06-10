@@ -83,6 +83,12 @@ class Settings(BaseSettings):
     ms_graph_mailbox: str = ""  # kullanıcı UPN veya ID (örn. satis@firma.com)
     ms_graph_poll_interval_minutes: int = 5
 
+    # e-Fatura — GİB entegratör adapter (Logo / Foriba / İzibiz)
+    einvoice_enabled: bool = False
+    einvoice_provider: str = "logo"  # "logo" | "foriba" | "izibiz"
+    einvoice_api_key: str = ""
+    einvoice_api_url: str = ""
+
     sentry_dsn: str = ""
     otel_exporter_otlp_endpoint: str = ""
 

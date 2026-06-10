@@ -24,6 +24,10 @@ FUZZY_THRESHOLD = 85
 HIGH_CONFIDENCE = 0.85
 MAX_CANDIDATES = 5
 
+# SAP CardType değerleri
+CARD_TYPE_CUSTOMER = "cCustomer"
+CARD_TYPE_SUPPLIER = "cSupplier"
+
 
 class CustomerMatcherAgent(BaseAgent):
     name = "customer_matcher"
@@ -33,6 +37,7 @@ class CustomerMatcherAgent(BaseAgent):
         ctx: AgentContext,
         customer: ExtractedCustomer | dict[str, Any] | None = None,
         db: AsyncSession | None = None,
+        mode: str = "customer",  # "customer" | "supplier"
         **kwargs: Any,
     ) -> AgentResult:
         if db is None:
@@ -42,15 +47,16 @@ class CustomerMatcherAgent(BaseAgent):
         if isinstance(customer, dict):
             customer = ExtractedCustomer.model_validate(customer)
 
+        card_type = CARD_TYPE_SUPPLIER if mode == "supplier" else CARD_TYPE_CUSTOMER
         match = CustomerMatch()
 
         if customer.tax_id:
-            bp = await _by_tax_id(db, customer.tax_id)
+            bp = await _by_tax_id(db, customer.tax_id, card_type=card_type)
             if bp:
                 match = _exact(bp, "tax_id")
 
         if not match.card_code and customer.email:
-            bp = await _by_email(db, customer.email)
+            bp = await _by_email(db, customer.email, card_type=card_type)
             if bp:
                 match = _exact(bp, "email")
 
@@ -60,10 +66,12 @@ class CustomerMatcherAgent(BaseAgent):
                 match = alias_hit
 
         if not match.card_code and customer.name:
-            match = await _fuzzy_name(db, customer.name)
+            match = await _fuzzy_name(db, customer.name, card_type=card_type)
 
         if not match.card_code:
-            cands = await _name_candidates(db, customer.name or "", limit=MAX_CANDIDATES)
+            cands = await _name_candidates(
+                db, customer.name or "", limit=MAX_CANDIDATES, card_type=card_type
+            )
             match.candidates = [_bp_summary(bp) for bp in cands]
 
         needs_human = match.score < HIGH_CONFIDENCE or not match.card_code
@@ -85,16 +93,24 @@ class CustomerMatcherAgent(BaseAgent):
         )
 
 
-async def _by_tax_id(db: AsyncSession, tax_id: str) -> BusinessPartnerCache | None:
+async def _by_tax_id(
+    db: AsyncSession, tax_id: str, *, card_type: str = CARD_TYPE_CUSTOMER
+) -> BusinessPartnerCache | None:
     result = await db.execute(
-        select(BusinessPartnerCache).where(BusinessPartnerCache.federal_tax_id == tax_id)
+        select(BusinessPartnerCache)
+        .where(BusinessPartnerCache.federal_tax_id == tax_id)
+        .where(BusinessPartnerCache.card_type == card_type)
     )
     return result.scalars().first()
 
 
-async def _by_email(db: AsyncSession, email: str) -> BusinessPartnerCache | None:
+async def _by_email(
+    db: AsyncSession, email: str, *, card_type: str = CARD_TYPE_CUSTOMER
+) -> BusinessPartnerCache | None:
     result = await db.execute(
-        select(BusinessPartnerCache).where(BusinessPartnerCache.email_address == email)
+        select(BusinessPartnerCache)
+        .where(BusinessPartnerCache.email_address == email)
+        .where(BusinessPartnerCache.card_type == card_type)
     )
     return result.scalars().first()
 
@@ -120,8 +136,10 @@ async def _by_alias(db: AsyncSession, alias_text: str) -> CustomerMatch | None:
     )
 
 
-async def _fuzzy_name(db: AsyncSession, name: str, top: int = 200) -> CustomerMatch:
-    candidates = await _name_candidates(db, name, limit=top)
+async def _fuzzy_name(
+    db: AsyncSession, name: str, top: int = 200, *, card_type: str = CARD_TYPE_CUSTOMER
+) -> CustomerMatch:
+    candidates = await _name_candidates(db, name, limit=top, card_type=card_type)
     if not candidates:
         return CustomerMatch()
     names = [bp.card_name for bp in candidates]
@@ -144,17 +162,20 @@ async def _fuzzy_name(db: AsyncSession, name: str, top: int = 200) -> CustomerMa
     )
 
 
-async def _name_candidates(db: AsyncSession, name: str, limit: int) -> list[BusinessPartnerCache]:
+async def _name_candidates(
+    db: AsyncSession, name: str, limit: int, *, card_type: str = CARD_TYPE_CUSTOMER
+) -> list[BusinessPartnerCache]:
     if not name:
         return []
-    # İlk 2 token'dan herhangi birini içeren BP'leri getir (OR).
     tokens = name.lower().split()[:2]
     conditions = [
         BusinessPartnerCache.card_name_lower.like(f"%{tok}%") for tok in tokens
     ]
+    name_filter = or_(*conditions) if len(conditions) > 1 else conditions[0]
     stmt = (
         select(BusinessPartnerCache)
-        .where(or_(*conditions) if len(conditions) > 1 else conditions[0])
+        .where(name_filter)
+        .where(BusinessPartnerCache.card_type == card_type)
         .limit(limit)
     )
     result = await db.execute(stmt)
