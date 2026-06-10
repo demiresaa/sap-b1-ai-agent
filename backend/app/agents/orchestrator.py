@@ -16,7 +16,7 @@ sonra `submit` endpoint'i SAPWriter'ı çağırır.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -32,6 +32,18 @@ from app.db.base import utcnow
 from app.db.models import AgentRun, AgentStep
 
 logger = logging.getLogger(__name__)
+
+HIGH_CONFIDENCE = 0.95   # tam otonom — insan onayı gerekmez
+MEDIUM_CONFIDENCE = 0.80  # hızlı doğrulama — 1-click onay yeterli
+# < MEDIUM_CONFIDENCE → tam insan incelemesi
+
+
+def _confidence_tier(score: float) -> str:
+    if score >= HIGH_CONFIDENCE:
+        return "high"
+    if score >= MEDIUM_CONFIDENCE:
+        return "medium"
+    return "low"
 
 
 class OrchestratorAgent(BaseAgent):
@@ -136,6 +148,7 @@ class OrchestratorAgent(BaseAgent):
             extra={
                 "needs_human": any_human,
                 "overall_confidence": overall_confidence,
+                "confidence_tier": _confidence_tier(overall_confidence),
                 "card_code": card_code,
                 "extracted": extracted.model_dump(mode="json"),
                 "matches": product_result.data.get("matches", []),
@@ -154,9 +167,12 @@ def _finalize(
     extra: dict[str, Any] | None = None,
 ) -> AgentResult:
     run.status = status
-    run.completed_at = datetime.now(timezone.utc)
+    run.completed_at = datetime.now(UTC)
     run.error_message = error
-    run.summary = {**(extra or {}), "steps": {k: v.model_dump(mode="json") for k, v in steps_results.items()}}
+    run.summary = {
+        **(extra or {}),
+        "steps": {k: v.model_dump(mode="json") for k, v in steps_results.items()},
+    }
     db.add(run)
 
     needs_human = (extra or {}).get("needs_human", False)
@@ -194,6 +210,4 @@ def _safe_kwargs(call_kwargs: dict[str, Any]) -> dict[str, Any]:
 def _is_unserializable(value: Any) -> bool:
     if isinstance(value, AsyncSession):
         return True
-    if hasattr(value, "redis"):
-        return True
-    return False
+    return bool(hasattr(value, "redis"))

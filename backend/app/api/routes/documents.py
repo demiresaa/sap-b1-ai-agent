@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 import io
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, BackgroundTasks, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 from sqlalchemy import desc, select
 from sqlalchemy.orm import selectinload
 
@@ -371,7 +372,7 @@ async def generate_quotation_pdf(
         storage_path=stored.storage_path,
         size_bytes=stored.size_bytes,
         template_name=template_name,
-        generated_at=datetime.now(timezone.utc),
+        generated_at=datetime.now(UTC),
     )
     db.add(pdf_row)
 
@@ -418,7 +419,7 @@ async def download_quotation_pdf(
         )
 
     data = storage.open_read(pdf.storage_path)
-    pdf.downloaded_at = datetime.now(timezone.utc)
+    pdf.downloaded_at = datetime.now(UTC)
     await db.flush()
 
     headers = {
@@ -633,6 +634,51 @@ async def convert_to_order(
         dry_run=dry_run_flag,
         message=message,
     )
+
+
+class AliasCreate(BaseModel):
+    alias_text: str
+    target_kind: str   # "item" | "bp"
+    target_code: str   # SAP ItemCode veya CardCode
+    card_code: str | None = None  # hangi müşteri için (item alias'ında zorunlu)
+
+
+@router.post("/{document_id}/aliases", status_code=status.HTTP_201_CREATED)
+async def save_aliases(
+    document_id: str,
+    aliases: list[AliasCreate],
+    user: CurrentUser,
+    db: DbSession,
+) -> dict[str, int]:
+    """Operatör düzeltmelerini CustomerAlias tablosuna kaydeder.
+
+    Bir sonraki aynı müşteriden gelen PDF'te bu eşleşmeler otomatik kullanılır
+    (score=1.0, strategy='alias'). Learning loop.
+    """
+    from app.db.models import CustomerAlias
+
+    if not aliases:
+        return {"saved": 0}
+
+    await _get_doc_or_404(db, document_id)
+
+    now = utcnow()
+    for a in aliases:
+        db.add(
+            CustomerAlias(
+                card_code=a.card_code or "",
+                alias_text=a.alias_text,
+                alias_lower=a.alias_text.lower().strip(),
+                target_kind=a.target_kind,
+                target_code=a.target_code,
+                confidence=1.0,
+                confirmed_by_user_id=user.id,
+                created_at=now,
+                updated_at=now,
+            )
+        )
+    await db.flush()
+    return {"saved": len(aliases)}
 
 
 async def _get_doc_or_404(db, document_id: str) -> Document:

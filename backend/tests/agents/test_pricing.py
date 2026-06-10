@@ -13,7 +13,12 @@ from app.agents.schemas import ExtractedLine, ProductMatch
 def _make_db(item_price: float | None) -> MagicMock:
     """ItemCache lookup'ı için sahte AsyncSession."""
     item = MagicMock()
-    item.raw = {"LastPurchasePrice": item_price} if item_price is not None else None
+    # ItemPrices formatı: sync task'ın $expand=ItemPrices ile doldurduğu yapı
+    item.raw = (
+        {"ItemPrices": [{"PriceList": 1, "Price": item_price}]}
+        if item_price is not None
+        else None
+    )
 
     scalars = MagicMock()
     scalars.first.return_value = item if item.raw is not None else None

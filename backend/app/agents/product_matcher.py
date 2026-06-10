@@ -14,7 +14,7 @@ from __future__ import annotations
 from typing import Any
 
 from rapidfuzz import fuzz, process
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.base import AgentContext, AgentResult, BaseAgent
@@ -136,10 +136,21 @@ async def _by_alias(
 
 
 async def _fuzzy(db: AsyncSession, line_no: int, description: str) -> ProductMatch:
-    token = description.split()[0].lower() if description else ""
+    # İlk 2 token'dan herhangi birini içeren kayıtları al (OR).
+    # foreign_name_lower da dahil — üretici/model adı orada olabilir.
+    tokens = description.lower().split()[:2]
+    if not tokens:
+        return ProductMatch(line_no=line_no)
+
+    conditions = []
+    for tok in tokens:
+        conditions.append(ItemCache.item_name_lower.like(f"%{tok}%"))
+        if ItemCache.foreign_name is not None:
+            conditions.append(ItemCache.foreign_name.like(f"%{tok}%"))
+
     stmt = (
         select(ItemCache)
-        .where(ItemCache.item_name_lower.like(f"%{token}%"))
+        .where(or_(*conditions))
         .limit(NAME_TOKEN_LIMIT)
     )
     result = await db.execute(stmt)

@@ -13,7 +13,7 @@ from __future__ import annotations
 from typing import Any
 
 from rapidfuzz import fuzz, process
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.base import AgentContext, AgentResult, BaseAgent
@@ -147,10 +147,14 @@ async def _fuzzy_name(db: AsyncSession, name: str, top: int = 200) -> CustomerMa
 async def _name_candidates(db: AsyncSession, name: str, limit: int) -> list[BusinessPartnerCache]:
     if not name:
         return []
-    token = name.split()[0].lower()
+    # İlk 2 token'dan herhangi birini içeren BP'leri getir (OR).
+    tokens = name.lower().split()[:2]
+    conditions = [
+        BusinessPartnerCache.card_name_lower.like(f"%{tok}%") for tok in tokens
+    ]
     stmt = (
         select(BusinessPartnerCache)
-        .where(BusinessPartnerCache.card_name_lower.like(f"%{token}%"))
+        .where(or_(*conditions) if len(conditions) > 1 else conditions[0])
         .limit(limit)
     )
     result = await db.execute(stmt)

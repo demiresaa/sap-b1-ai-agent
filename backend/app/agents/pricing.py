@@ -54,7 +54,9 @@ class PricingAgent(BaseAgent):
         checks: list[PricingCheck] = []
         for line in parsed_lines:
             match = parsed_matches.get(line.line_no)
-            sap_price = await _sap_list_price(db, match.item_code) if match and match.item_code else None
+            sap_price = (
+                await _sap_list_price(db, match.item_code) if match and match.item_code else None
+            )
             check = _compare(line, sap_price)
             checks.append(check)
 
@@ -105,15 +107,29 @@ def _compare(line: ExtractedLine, sap_price: float | None) -> PricingCheck:
     )
 
 
-async def _sap_list_price(db: AsyncSession, item_code: str) -> float | None:
-    """MVP: ItemCache.raw içinden son satış fiyatı (varsa). Faz 2'de gerçek price list."""
+async def _sap_list_price(db: AsyncSession, item_code: str, price_list: int = 1) -> float | None:
+    """ItemCache.raw içindeki ItemPrices listesinden satış fiyatı döner.
+
+    Sync task $expand=ItemPrices ile fiyat listesini raw JSONB'ye gömer.
+    price_list=1 varsayılan SAP fiyat listesi (müşteri özel değil).
+    """
     result = await db.execute(select(ItemCache).where(ItemCache.item_code == item_code))
     item = result.scalars().first()
     if not item or not item.raw:
         return None
-    raw = item.raw
-    price = raw.get("LastPurchasePrice") or raw.get("AvgStdPrice")
-    try:
-        return float(price) if price is not None else None
-    except (TypeError, ValueError):
-        return None
+    item_prices: list[dict] = item.raw.get("ItemPrices") or []
+    for p in item_prices:
+        if p.get("PriceList") == price_list:
+            val = p.get("Price")
+            try:
+                return float(val) if val is not None else None
+            except (TypeError, ValueError):
+                return None
+    # Fiyat listesi bulunamazsa ilk mevcut fiyatı dön
+    if item_prices:
+        val = item_prices[0].get("Price")
+        try:
+            return float(val) if val is not None else None
+        except (TypeError, ValueError):
+            return None
+    return None

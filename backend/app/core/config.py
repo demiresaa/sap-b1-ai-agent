@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     app_env: str = "development"
-    app_secret_key: str = "change-me"
+    app_secret_key: str = "change-me"  # noqa: S105
     app_base_url: str = "http://localhost:8000"
 
     database_url: str
@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     sap_max_concurrent_sessions: int = 4
     # Dry-run: SAP'a yazma, sadece JSON payload'ı üret. Tenant'ta override edilebilir.
     sap_dry_run: bool = True
+
+    # Yüksek güven (≥0.95) pipeline sonucunu otomatik SAP'a gönder.
+    # Pilot'ta False — operatör her belgeyi kontrol eder. Prod'da True yapılabilir.
+    auto_submit_on_high_confidence: bool = False
 
     # HashiCorp Vault — secret kaynağı (SAP credential, OpenRouter key vs.)
     vault_enabled: bool = False
@@ -81,9 +85,9 @@ class Settings(BaseSettings):
     data_retention_days_audit_log: int = 2555  # 7 yıl
 
     @model_validator(mode="after")
-    def _validate_production_secrets(self) -> "Settings":
+    def _validate_production_secrets(self) -> Settings:
         if self.app_env == "production":
-            if self.app_secret_key == "change-me":
+            if self.app_secret_key == "change-me":  # noqa: S105
                 raise ValueError(
                     "Production'da APP_SECRET_KEY varsayılan değer olamaz; "
                     "`openssl rand -hex 32` ile üretin."
