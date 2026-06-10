@@ -83,11 +83,23 @@ export interface ExtractedDocument {
   customer: ExtractedCustomer;
   reference_no?: string | null;
   doc_date?: string | null;
+  tax_date?: string | null;
   due_date?: string | null;
   currency?: string | null;
   lines: ExtractedLine[];
   notes?: string | null;
   confidence?: Record<string, number>;
+  // SAP alanları — operatör formdan doldurur
+  sales_person_code?: number | null;
+  documents_owner?: number | null;
+  project?: string | null;
+  payment_group_code?: number | null;
+  ship_to_code?: string | null;
+  pay_to_code?: string | null;
+  u_branch?: string | null;
+  u_teklif_turu?: string | null;
+  u_teklif_durumu?: string | null;
+  u_tahmini_gercek_tarih?: string | null;
 }
 
 export interface ExtractedDataOut {

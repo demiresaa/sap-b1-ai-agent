@@ -141,7 +141,6 @@ export function DocumentForm({ document }: Props) {
             <CustomerPicker
               customer={payload.customer}
               onChange={(c, bp) => {
-                // Para birimi müşteriden otomatik gelsin (eğer henüz girilmemişse)
                 const newPayload: Partial<ExtractedDocument> = { customer: c };
                 if (bp?.Currency && !payload.currency) {
                   newPayload.currency = bp.Currency;
@@ -151,6 +150,20 @@ export function DocumentForm({ document }: Props) {
               }}
               fieldState={customerState}
             />
+            {/* Manuel CardCode — SAP picker çalışmadığında elle gir */}
+            <div className="mt-2 flex items-center gap-2">
+              <span className="text-xs text-slate-500 shrink-0 w-36">Müşteri Kodu (CardCode):</span>
+              <Input
+                placeholder="örn. 120.01.1158"
+                fieldState={payload.customer.card_code ? "filled" : "empty"}
+                value={payload.customer.card_code ?? ""}
+                onChange={(e) =>
+                  patch({
+                    customer: { ...payload.customer, card_code: e.target.value || null },
+                  })
+                }
+              />
+            </div>
 
             {/* Seçili müşteri bilgi kartı — SAP'tan gelen tüm alanlar */}
             {payload.customer.card_code && (
@@ -236,6 +249,104 @@ export function DocumentForm({ document }: Props) {
               value={payload.reference_no ?? ""}
               onChange={(e) => patch({ reference_no: e.target.value || null })}
               placeholder="NumAtCard"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* SAP Alanları */}
+      <div className="rounded-lg border bg-white p-4">
+        <h3 className="mb-3 text-sm font-semibold">SAP Alanları</h3>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div className="space-y-1">
+            <FieldLabel hint="SalesPersonCode">Satış Temsilcisi Kodu</FieldLabel>
+            <Input
+              type="number"
+              fieldState={payload.sales_person_code != null ? "filled" : "empty"}
+              value={payload.sales_person_code ?? ""}
+              onChange={(e) => patch({ sales_person_code: e.target.value === "" ? null : Number(e.target.value) })}
+              placeholder="örn. 10"
+            />
+          </div>
+          <div className="space-y-1">
+            <FieldLabel hint="DocumentsOwner">Belge Sahibi (Kullanıcı ID)</FieldLabel>
+            <Input
+              type="number"
+              fieldState={payload.documents_owner != null ? "filled" : "empty"}
+              value={payload.documents_owner ?? ""}
+              onChange={(e) => patch({ documents_owner: e.target.value === "" ? null : Number(e.target.value) })}
+              placeholder="örn. 22"
+            />
+          </div>
+          <div className="space-y-1">
+            <FieldLabel hint="Project">Proje Kodu</FieldLabel>
+            <Input
+              fieldState={payload.project ? "filled" : "empty"}
+              value={payload.project ?? ""}
+              onChange={(e) => patch({ project: e.target.value || null })}
+              placeholder="örn. 2776"
+            />
+          </div>
+          <div className="space-y-1">
+            <FieldLabel hint="U_Teklif_Turu">Teklif Türü</FieldLabel>
+            <select
+              className="w-full rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={payload.u_teklif_turu ?? "Standart_Teklif"}
+              onChange={(e) => patch({ u_teklif_turu: e.target.value })}
+            >
+              <option value="Standart_Teklif">Standart Teklif</option>
+              <option value="Hedef_Teklif">Hedef Teklif</option>
+              <option value="Key_Account">Key Account</option>
+            </select>
+          </div>
+          <div className="space-y-1">
+            <FieldLabel hint="U_Teklif_Durumu">Teklif Durumu</FieldLabel>
+            <select
+              className="w-full rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={payload.u_teklif_durumu ?? "Hazırlanıyor"}
+              onChange={(e) => patch({ u_teklif_durumu: e.target.value })}
+            >
+              <option value="Hazırlanıyor">Hazırlanıyor</option>
+              <option value="Gönderildi">Gönderildi</option>
+              <option value="Kazanıldı">Kazanıldı</option>
+              <option value="Kaybedildi">Kaybedildi</option>
+            </select>
+          </div>
+          <div className="space-y-1">
+            <FieldLabel hint="U_Tahimini_Gercek_Tarih">Tahmini Gerçekleşme Tarihi</FieldLabel>
+            <Input
+              type="date"
+              fieldState={payload.u_tahmini_gercek_tarih ? "filled" : "empty"}
+              value={payload.u_tahmini_gercek_tarih ?? ""}
+              onChange={(e) => patch({ u_tahmini_gercek_tarih: e.target.value || null })}
+            />
+          </div>
+          <div className="space-y-1">
+            <FieldLabel hint="ShipToCode">Sevk Adresi Kodu</FieldLabel>
+            <Input
+              fieldState={payload.ship_to_code ? "filled" : "empty"}
+              value={payload.ship_to_code ?? ""}
+              onChange={(e) => patch({ ship_to_code: e.target.value || null })}
+              placeholder="örn. Sevk"
+            />
+          </div>
+          <div className="space-y-1">
+            <FieldLabel hint="PayToCode">Fatura Adresi Kodu</FieldLabel>
+            <Input
+              fieldState={payload.pay_to_code ? "filled" : "empty"}
+              value={payload.pay_to_code ?? ""}
+              onChange={(e) => patch({ pay_to_code: e.target.value || null })}
+              placeholder="örn. Fatura"
+            />
+          </div>
+          <div className="space-y-1">
+            <FieldLabel hint="PaymentGroupCode">Ödeme Grubu</FieldLabel>
+            <Input
+              type="number"
+              fieldState={payload.payment_group_code != null ? "filled" : "empty"}
+              value={payload.payment_group_code ?? ""}
+              onChange={(e) => patch({ payment_group_code: e.target.value === "" ? null : Number(e.target.value) })}
+              placeholder="örn. 7"
             />
           </div>
         </div>

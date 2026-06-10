@@ -294,27 +294,70 @@ def _kind_to_writer(kind: DocumentKind) -> str:
 def _build_sap_payload(extracted: dict[str, Any], kind: DocumentKind) -> dict[str, Any]:
     """ExtractedData payload'undan SAP POST payload'ı üretir.
 
-    Bu MVP'de mapping form'da operatör tarafından netleştirilmiş `extracted`
-    payload'unu temel alır — yani CardCode, ItemCode, fiyatlar form içinde
-    bağlanmış olmalı.
+    SAP 2026_Test testlerinden doğrulanan zorunlu alanlar (eksikse SAP hata verir):
+      CardCode, SalesPersonCode, DocumentsOwner, U_Branch, Project,
+      NumAtCard, U_Tahimini_Gercek_Tarih
+      Satır: ItemCode + ProjectCode
     """
     customer = extracted.get("customer") or {}
     lines = extracted.get("lines") or []
-    return {
-        "CardCode": customer.get("card_code") or customer.get("CardCode"),
-        "DocDate": extracted.get("doc_date"),
-        "DocDueDate": extracted.get("due_date") or extracted.get("doc_date"),
-        "DocCurrency": extracted.get("currency"),
+
+    card_code = (customer.get("card_code") or customer.get("CardCode") or "")
+    card_code = card_code.strip() or None  # trailing/leading boşluk temizle
+
+    # Zorunlu alan kontrolü — eksikse SAP'a POST yapma
+    REQUIRED = {
+        "CardCode": card_code,
+        "SalesPersonCode": extracted.get("sales_person_code"),
+        "DocumentsOwner": extracted.get("documents_owner"),
+        "U_Branch": extracted.get("u_branch"),
+        "Project": extracted.get("project"),
         "NumAtCard": extracted.get("reference_no"),
+        "U_Tahimini_Gercek_Tarih": extracted.get("u_tahmini_gercek_tarih"),
+    }
+    missing = [k for k, v in REQUIRED.items() if not v]
+    if missing:
+        raise ValueError(f"SAP POST için zorunlu alanlar eksik: {', '.join(missing)}")
+
+    if not lines:
+        raise ValueError("SAP POST için en az 1 DocumentLine gerekli.")
+
+    doc_date = extracted.get("doc_date")
+    payload: dict[str, Any] = {
+        "CardCode": card_code,
+        "SalesPersonCode": extracted.get("sales_person_code"),
+        "DocumentsOwner": extracted.get("documents_owner"),
+        "U_Branch": extracted.get("u_branch", "Elekon"),
+        "Project": extracted.get("project"),
+        "NumAtCard": extracted.get("reference_no"),
+        "U_Tahimini_Gercek_Tarih": extracted.get("u_tahmini_gercek_tarih"),
+        "DocCurrency": extracted.get("currency", "EUR"),
+        "DocDate": doc_date,
+        "TaxDate": extracted.get("tax_date") or doc_date,
+        "DocDueDate": extracted.get("due_date") or doc_date,
+        "ShipToCode": extracted.get("ship_to_code"),
+        "PayToCode": extracted.get("pay_to_code"),
+        "U_Teklif_Turu": extracted.get("u_teklif_turu", "Standart_Teklif"),
+        "U_Teklif_Durumu": extracted.get("u_teklif_durumu", "Hazırlanıyor"),
         "Comments": extracted.get("notes"),
         "DocumentLines": [
-            {
-                "ItemCode": line.get("item_code") or line.get("ItemCode"),
-                "Quantity": line.get("quantity") or line.get("Quantity"),
-                "UnitPrice": line.get("unit_price") or line.get("UnitPrice"),
-                "DiscountPercent": line.get("discount_pct") or line.get("DiscountPercent"),
-                "TaxCode": line.get("tax_code") or line.get("TaxCode"),
-            }
+            _build_sap_line(line, extracted.get("project"))
             for line in lines
         ],
     }
+    return {k: v for k, v in payload.items() if v is not None}
+
+
+def _build_sap_line(line: dict[str, Any], default_project: str | None) -> dict[str, Any]:
+    # TaxCode gönderilmiyor — SAP belgeden uyarısı: VatGroup ile çakışır
+    built: dict[str, Any] = {
+        "ItemCode": line.get("item_code") or line.get("ItemCode") or line.get("item_code_raw"),
+        "Quantity": line.get("quantity") if line.get("quantity") is not None else line.get("Quantity"),
+        "UnitPrice": line.get("unit_price") if line.get("unit_price") is not None else line.get("UnitPrice"),
+        "DiscountPercent": line.get("discount_pct") or line.get("DiscountPercent", 0),
+        "VatGroup": line.get("vat_group") or line.get("VatGroup", "S01"),
+        "WarehouseCode": line.get("warehouse_code") or line.get("WarehouseCode", "01"),
+        "ProjectCode": line.get("project_code") or line.get("ProjectCode") or default_project,
+        "Currency": line.get("currency") or line.get("Currency", "EUR"),
+    }
+    return {k: v for k, v in built.items() if v is not None}
