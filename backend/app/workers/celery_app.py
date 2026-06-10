@@ -15,6 +15,7 @@ celery_app = Celery(
         "app.workers.email_poller",
         "app.workers.graph_poller",
         "app.workers.sync_tasks",
+        "app.workers.approval_tasks",
     ],
 )
 
@@ -46,6 +47,10 @@ celery_app.conf.update(
             "schedule": crontab(
                 minute=f"*/{max(1, settings.ms_graph_poll_interval_minutes)}"
             ),
+        },
+        "check-approval-sla": {
+            "task": "app.workers.approval_tasks.check_approval_sla",
+            "schedule": crontab(minute="*/30"),
         },
     },
 )

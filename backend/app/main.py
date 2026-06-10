@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from starlette.requests import Request
 
 from app.api.middleware.tenant import TenantResolverMiddleware
-from app.api.routes import admin, analytics, auth, debug, documents, orders, sap
+from app.api.routes import admin, analytics, auth, debug, documents, orders, portal, rules, sap
 from app.core.config import settings
 from app.core.logging import configure_logging
 from app.core.metrics import metrics_response
@@ -97,6 +97,8 @@ app.include_router(sap.router, prefix="/api/sap")
 app.include_router(analytics.router, prefix="/api/analytics")
 app.include_router(debug.router, prefix="/api/debug")
 app.include_router(admin.router, prefix="/api/admin")
+app.include_router(portal.router, prefix="/api/portal")
+app.include_router(rules.router, prefix="/api/rules")
 
 
 @app.websocket("/ws/documents/{document_id}/status")
